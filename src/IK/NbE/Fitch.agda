@@ -1,5 +1,5 @@
 -- Formulation of the NbE model in Norm.agda in terms of Model.agda
-module IK.Model.Fitch where
+module IK.NbE.Fitch where
 
 open import Data.Product using (_,_; proj₁; proj₂; ∃; _×_)
 open import Data.Unit using (tt)
@@ -63,7 +63,7 @@ cod-R-monotone {Γ} {Δ} {Γ'} (ΓR , Δ=Γ🔒ΓR) Γ'≤Γ = (Γ' 🔒) , T-tr
 dom-R-monotone : ∀ {w v v'} → w W-≤ v → v T-≤ v' → ∃ λ w' → w T-≤ w' × w' W-≤ v'
 dom-R-monotone {Γ} {Δ} {Δ'} (ΓR , Δ=Γ🔒ΓR) Δ≤Δ' = ←🔒 Δ' , stashWk Δ=Γ🔒ΓR Δ≤Δ' , 🔒→ Δ' , resExt Δ=Γ🔒ΓR Δ≤Δ'
 
-open import IK.Interpretation.Fitch W _W-≤_ _T-≤_ T-preorder cod-R-monotone dom-R-monotone
+open import IK.Semantics.PossibleWorlds.Interpretation.Fitch W _W-≤_ _T-≤_ T-preorder cod-R-monotone dom-R-monotone
 import IK.Norm as Norm
 open Norm.Ne
 open Norm.Nf

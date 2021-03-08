@@ -3,7 +3,7 @@ open import Level
 open import Relation.Binary hiding (_⇒_)
 open import Relation.Binary.PropositionalEquality as P using (_≡_)
 
-module IK.Interpretation.DC
+module IK.Semantics.PossibleWorlds.Interpretation.DC
   (W-Carrier  : Set)
   (R          : Rel W-Carrier 0ℓ)
   (_≤_        : Rel W-Carrier 0ℓ)
@@ -13,7 +13,7 @@ module IK.Interpretation.DC
   where
 
 open import IK.Calculus.DC
-open import IK.Model.Model W-Carrier R _≤_ T-preorder cod-R-monotone dom-R-monotone public
+open import IK.Semantics.PossibleWorlds.Model W-Carrier R _≤_ T-preorder cod-R-monotone dom-R-monotone public
 
 private
   variable

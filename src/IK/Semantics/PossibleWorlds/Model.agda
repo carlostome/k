@@ -7,7 +7,7 @@ open import Relation.Binary.PropositionalEquality as P using (_≡_)
 
 -- A model of Fitch-style lambda calculus, i.e. an adjunction, _in
 -- presheaves_ (after Goldblatt?)
-module IK.Model.Model
+module IK.Semantics.PossibleWorlds.Model
   (W-Carrier : Set)
   (R         : Rel W-Carrier 0ℓ) -- accessibility relation, abstract "lock with lock-free extension"
   (let _W-≈_ = _≡_)             -- (_W-≈_ : Rel W-Carrier 0ℓ)

@@ -4,7 +4,7 @@ open import Level
 open import Relation.Binary hiding (_⇒_)
 open import Relation.Binary.PropositionalEquality as P using (_≡_)
 
-module IK.Interpretation.Fitch
+module IK.Semantics.PossibleWorlds.Interpretation.Fitch
   (W-Carrier  : Set)
   (R          : Rel W-Carrier 0ℓ) -- accessibility relation, abstract "lock with lock-free extension"
   (_≤_        : Rel W-Carrier 0ℓ) -- Kripke or index category relation, abstract "weakening"
@@ -14,7 +14,7 @@ module IK.Interpretation.Fitch
   where
 
 open import IK.Term renaming (_≤_ to Wk) -- reexports IK.Type and Context Ty
-open import IK.Model.Model W-Carrier R _≤_ T-preorder cod-R-monotone dom-R-monotone public
+open import IK.Semantics.PossibleWorlds.Model W-Carrier R _≤_ T-preorder cod-R-monotone dom-R-monotone public
 
 module _ (⟦𝕓⟧ : Obj) where
   ⟦_⟧Ty : Ty → Obj

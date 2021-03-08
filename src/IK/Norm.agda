@@ -49,6 +49,7 @@ wkNf e (up𝕓 x) = up𝕓 (wkNe e x)
 wkNf e (lam n) = lam (wkNf (keep e) n)
 wkNf e (box n) = box (wkNf (keep🔒 e) n)
 
+
 ------------
 -- NbE Model
 ------------
