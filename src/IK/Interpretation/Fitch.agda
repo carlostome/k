@@ -14,7 +14,7 @@ module IK.Interpretation.Fitch
   where
 
 open import IK.Term renaming (_≤_ to Wk) -- reexports IK.Type and Context Ty
-open import IK.Model W-Carrier R _≤_ T-preorder cod-R-monotone dom-R-monotone public
+open import IK.Model.Model W-Carrier R _≤_ T-preorder cod-R-monotone dom-R-monotone public
 
 module _ (⟦𝕓⟧ : Obj) where
   ⟦_⟧Ty : Ty → Obj

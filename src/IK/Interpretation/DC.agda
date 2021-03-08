@@ -13,14 +13,15 @@ module IK.Interpretation.DC
   where
 
 open import IK.Calculus.DC
-open import IK.Model W-Carrier R _≤_ T-preorder cod-R-monotone dom-R-monotone public
+open import IK.Model.Model W-Carrier R _≤_ T-preorder cod-R-monotone dom-R-monotone public
 
 private
   variable
     Γ Δ : Ctx
+
 module _ (⟦𝕓⟧ : Obj) where
   ⟦_⟧Ty : Ty → Obj
-  ⟦ ο ⟧Ty =  ⟦𝕓⟧
+  ⟦ 𝕓 ⟧Ty =  ⟦𝕓⟧
   ⟦ a ⇒ b ⟧Ty = ⟦ b ⟧Ty ^ ⟦ a ⟧Ty
   ⟦ ◻ a ⟧Ty = □ ⟦ a ⟧Ty
 

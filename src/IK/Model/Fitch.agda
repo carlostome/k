@@ -1,5 +1,5 @@
 -- Formulation of the NbE model in Norm.agda in terms of Model.agda
-module IK.NbEModel where
+module IK.Model.Fitch where
 
 open import Data.Product using (_,_; proj₁; proj₂; ∃; _×_)
 open import Data.Unit using (tt)
