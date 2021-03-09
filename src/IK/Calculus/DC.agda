@@ -7,7 +7,8 @@ module IK.Calculus.DC where
   data Ctx : Set where
     []   : Ctx
     _`,_ : Ctx → Ty → Ctx
-  
+
+  infix 19 _⊆_
   data _⊆_ : Ctx → Ctx → Set where
     base : [] ⊆ []
     keep : ∀ {T Γ Δ} → Γ ⊆ Δ → (Γ `, T) ⊆ (Δ `, T)
@@ -33,6 +34,9 @@ module IK.Calculus.DC where
   ⊆-! : ∀ {Γ} → [] ⊆ Γ
   ⊆-! {[]} = base
   ⊆-! {Γ `, x} = drop ⊆-!
+
+  ⊆-`, : ∀ {Γ a} → Γ ⊆ Γ `, a
+  ⊆-`, = drop ⊆-refl
 
   data _;_⊢_ (Δ Γ : Ctx) : Ty → Set where
     var  : ∀ {A} → A ∈ Γ

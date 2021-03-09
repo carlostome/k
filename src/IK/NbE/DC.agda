@@ -12,6 +12,7 @@ module IK.NbE.DC where
         letbox* : ∀ {Δ Γ} {a} → Δ ; Γ ⊢Ne (◻ a) → iSet (Δ `, a)  Γ → iSet Δ  Γ
 
   open Psh
+
   private
     variable
       Γ Δ : Ctx
@@ -29,18 +30,12 @@ module IK.NbE.DC where
                   ; Wken = wkBox
                   ; letbox* = letbox}
 
-  _⇒̇_ : Psh → Psh → Psh
-  (P ⇒̇ Q) = record { iSet  = λ Δ₁ Γ₁ → ∀ {Δ₂ Γ₂} → (Δ₁⊆Δ₂ : Δ₁ ⊆ Δ₂)
-                             → (Γ₁⊆Γ₂ : Γ₁ ⊆ Γ₂) → iSet P Δ₂ Γ₂ → iSet Q Δ₂ Γ₂
-                    ; Wken = λ Δ₁⊆Δ₂ Γ₁⊆Γ₂ f Δ₂⊆Δ₃ Γ₂⊆Γ₃ x → f (⊆-trans Δ₁⊆Δ₂ Δ₂⊆Δ₃) (⊆-trans Γ₁⊆Γ₂ Γ₂⊆Γ₃) x
-                    ; letbox* = λ n f Δ₁⊆Δ₂ Γ₁⊆Γ₂ x → Q .letbox* (wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ n)
-                                  (f (keep Δ₁⊆Δ₂) Γ₁⊆Γ₂ (P .letbox* (wkNe (drop Δ₁⊆Δ₂) Γ₁⊆Γ₂ n) (P .Wken (drop (drop ⊆-refl)) ⊆-refl x))) }
-
   record _→̇_ (P Q : Psh) : Set where
     field
       iFun : ∀ {Γ Δ} → iSet P Δ Γ → iSet Q Δ Γ
 
   open _→̇_
+
   Tm : Ty → Psh
   Tm A = record { iSet = _;_⊢ A
                   ; Wken = wken
@@ -61,6 +56,11 @@ module IK.NbE.DC where
                 ; Wken = wkNf
                 ; letbox* = λ x x₁ → letbox x x₁}
 
+  _⇒̇_ : Psh → Psh → Psh
+  (P ⇒̇ Q) = record { iSet  = λ Δ₁ Γ₁ → ∀ {Δ₂ Γ₂} → (Δ₁⊆Δ₂ : Δ₁ ⊆ Δ₂)
+                             → (Γ₁⊆Γ₂ : Γ₁ ⊆ Γ₂) → iSet P Δ₂ Γ₂ → iSet Q Δ₂ Γ₂
+                    ; Wken = λ Δ₁⊆Δ₂ Γ₁⊆Γ₂ f Δ₂⊆Δ₃ Γ₂⊆Γ₃ x → f (⊆-trans Δ₁⊆Δ₂ Δ₂⊆Δ₃) (⊆-trans Γ₁⊆Γ₂ Γ₂⊆Γ₃) x
+                    ; letbox* = λ n f Δ₁⊆Δ₂ Γ₁⊆Γ₂ p → Q .letbox* (Ne _ .Wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ n) (f (keep Δ₁⊆Δ₂) Γ₁⊆Γ₂ (P .Wken ⊆-`, ⊆-refl p)) }
   
   open import Data.Unit
 
@@ -117,11 +117,25 @@ module IK.NbE.DC where
   □-map n .iFun (box x) = box (n .iFun x)
   □-map n .iFun (letbox t k) = letbox t (□-map n .iFun k)
 
-  postulate
-    □-pr : Hom O (□ P) → Hom O (□ Q) → Hom O (□ (P x Q))
-    □-! : Hom P (□ 𝟙)
-    abs : Hom (O x P) Q → Hom O (P ⇒̇ Q)
-    ev : Hom ((P ⇒̇ Q) x P) Q
+  □-! : Hom P (□ 𝟙)
+  □-! .iFun x = box tt
+
+  private
+    Box-pr : Box P Δ Γ → Box Q Δ Γ → Box (P x Q) Δ Γ
+    Box-pr (box t) u = aux t u
+      where aux : P .iSet [] Δ → Box Q Δ Γ → Box (P x Q) Δ Γ
+            aux t (box x) = box (t , x)
+            aux {P} t (letbox u k) = letbox u (aux (P .Wken base (drop ⊆-refl) t) k)
+    Box-pr (letbox t k) u = letbox t (Box-pr k (wkBox (drop ⊆-refl) ⊆-refl u))
+
+  □-pr : Hom O (□ P) → Hom O (□ Q) → Hom O (□ (P x Q))
+  □-pr n m .iFun s = Box-pr (n .iFun s) (m .iFun s)
+
+  abs : Hom (O x P) Q → Hom O (P ⇒̇ Q)
+  abs {O} n .iFun t Δ₁⊆Δ₂ Γ₁⊆Γ₂ u = n .iFun (O .Wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t , u)
+
+  ev : Hom ((P ⇒̇ Q) x P) Q
+  ev .iFun (n , m) = n ⊆-refl ⊆-refl m
 
   open import IK.Semantics.KripkeCat.Model
 
