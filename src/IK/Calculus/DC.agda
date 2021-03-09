@@ -105,3 +105,110 @@ module IK.Calculus.DC where
     Nf⇒Tm (box x) = box (Nf⇒Tm x)
     Nf⇒Tm (letbox x x₁) = letbox (Ne⇒Tm x) (Nf⇒Tm x₁)
     Nf⇒Tm (up x) = Ne⇒Tm x
+
+  _⊑_ : Ctx → Ctx → Set
+  Γ₁ ⊑ Γ₂ = ∀ {A} → A ∈ Γ₁ → A ∈ Γ₂
+
+  ⊑-refl : Reflexive _⊑_
+  ⊑-refl x = x
+
+  ⊑-drop : ∀ {T Γ Δ} → Γ ⊑ Δ → Γ ⊑ (Δ `, T)
+  ⊑-drop x here = there (x here)
+  ⊑-drop x (there x₁) = there (x (⊑-drop ⊑-refl x₁))
+
+  ⊑-keep : ∀ {T Γ Δ} → Γ ⊑ Δ → (Γ `, T) ⊑ (Δ `, T)
+  ⊑-keep x here = here
+  ⊑-keep x (there x₁) = there (x x₁)
+
+  wken-⊑ : ∀ {A} {Δ₁ Δ₂} {Γ₁ Γ₂} → Δ₁ ⊑ Δ₂ → Γ₁ ⊑ Γ₂ → Δ₁ ; Γ₁ ⊢ A → Δ₂ ; Γ₂ ⊢ A
+  wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ (var x) = var (Γ₁⊑Γ₂ x)
+  wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ (app t t₁) = app (wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ t) (wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ t₁)
+  wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ (lam t) = lam (wken-⊑ Δ₁⊑Δ₂ (⊑-keep Γ₁⊑Γ₂) t)
+  wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ (box t) = box (wken-⊑ (λ z → z) Δ₁⊑Δ₂ t)
+  wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ (letbox t t₁) = letbox (wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ t) (wken-⊑ (⊑-keep Δ₁⊑Δ₂) Γ₁⊑Γ₂ t₁)
+
+  open import Data.Nat
+  open import Data.Nat.Properties
+  open import Data.Nat.Induction
+  open import Induction.WellFounded
+
+  size : ∀ {Γ} {A} {Δ} → Δ ; Γ ⊢ A → ℕ
+  size (var x) = zero
+  size (app x x₁) = 1 + size x + size x₁
+  size (lam x) = 1 + size x
+  size (box x) = 1 + size x
+  size (letbox x x₁) = 1 + size x + size x₁
+
+  wken-⊑-size : ∀ {A} {Γ₁ Γ₂} {Δ₁ Δ₂} → (Δ₁⊑Δ₂ : Δ₁ ⊑ Δ₂) → (Γ₁⊑Γ₂ : Γ₁ ⊑ Γ₂)
+                   →  (t : Δ₁ ; Γ₁ ⊢ A) → size (wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ t) ≤ size t
+  wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ (var x) = z≤n
+  wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ (app t t₁) = s≤s (+-mono-≤ (wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ t) (wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ t₁))
+  wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ (lam t) = s≤s (wken-⊑-size Δ₁⊑Δ₂ (⊑-keep Γ₁⊑Γ₂) t)
+  wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ (box t) = s≤s (wken-⊑-size (λ z → z) Δ₁⊑Δ₂ t)
+  wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ (letbox t t₁) = s≤s (+-mono-≤ (wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ t) (wken-⊑-size (⊑-keep Δ₁⊑Δ₂) Γ₁⊑Γ₂ t₁))
+
+  msubst : ∀ {Γ} {Δ} {A B} → [] ; Δ ⊢ A  → (t : (Δ `, A) ; Γ ⊢ B)  → Δ ; Γ ⊢ B
+  msubst t u = aux t u (<′-wellFounded (size u))
+    where aux : ∀ {Γ} {Δ} {A B} → [] ; Δ ⊢ A  → (t : (Δ `, A) ; Γ ⊢ B) → Acc (_<′_) (size t) → Δ ; Γ ⊢ B
+          aux t (var x) (acc rs) = var x
+          aux t (app u u₁) (acc rs) = app (aux t u (rs (size u) (s≤′s (≤⇒≤′ (m≤m+n (size u) (size u₁))))))
+                                          (aux t u₁ (rs (size u₁) (s≤′s (≤⇒≤′ (m≤n+m (size u₁) (size u))))))
+          aux t (lam u) (acc rs) = lam (aux t u (rs (size u) (s≤′s (≤⇒≤′ ≤-refl))))
+          aux t (box u) (acc rs) = box (app (lam u) t)
+          aux t (letbox u u₁) (acc rs) = letbox ((aux t u (rs (size u) (s≤′s (≤⇒≤′ (m≤m+n (size u) (size u₁)))))))
+                                         (aux (wken-⊑ ⊑-refl (⊑-drop ⊑-refl) t) (wken-⊑ p ⊑-refl u₁)
+                                         (rs (size (wken-⊑ p ⊑-refl u₁)) (s≤′s (≤⇒≤′ (≤-trans (wken-⊑-size p ⊑-refl u₁) (m≤n+m (size u₁) (size u)))))))
+              where p : ∀ {Δ} {A} {B} →  ((Δ `, B) `, A) ⊑ ((Δ `, A) `, B)
+                    p here = there here
+                    p (there here) = here
+                    p (there (there x)) = there (there x)
+
+  postulate
+    subst : ∀ {Γ} {Δ} {A B} → Δ ; Γ ⊢ A → Δ ; (Γ `, A) ⊢ B → Δ ; Γ ⊢ B
+
+  -- equational theory w/o commuting conversions
+  data _;_⊢_∶_≈_ (Δ Γ : Ctx) : (A : Ty) → (t₁ t₂ : Δ ; Γ ⊢ A) → Set where
+
+    -- rules for ⇒
+    ⇒-β : ∀ {A B} {t₁ : Δ ; (Γ `, A) ⊢ B} {t₂ : Δ ; Γ ⊢ A}
+            →  Δ ; Γ ⊢ B ∶ app (lam t₁) t₂ ≈ subst t₂ t₁
+
+    ⇒-η : ∀ {A B} {t : Δ ; Γ ⊢ (A ⇒ B)}
+           → Δ ; Γ ⊢ (A ⇒ B) ∶ t ≈ lam (app (wken ⊆-refl ⊆-`, t) (var here))
+
+    ⇒-δ₁ : ∀ {A B} {t₁ t₂ : Δ ; (Γ `, A) ⊢ B}
+           → Δ ; (Γ `, A) ⊢ B ∶ t₁ ≈ t₂
+           → Δ ; Γ ⊢ (A ⇒ B) ∶ lam t₁ ≈ lam t₂
+    ⇒-δ₂ : ∀ {A B} {t₁ t₂ : Δ ; Γ ⊢ (A ⇒ B)} {u₁ u₂ : Δ ; Γ ⊢ A}
+           → Δ ; Γ ⊢ (A ⇒ B) ∶ t₁ ≈ t₂
+           → Δ ; Γ ⊢ A ∶ u₁ ≈ u₂
+           → Δ ; Γ ⊢ B ∶ app t₁ u₁ ≈ app t₂ u₂
+
+    -- rules for the □ type
+    □-β : ∀ {A B} {t₁ : [] ; Δ ⊢ A} {t₂ : (Δ `, A) ; Γ ⊢ B}
+            →  Δ ; Γ ⊢ B ∶ letbox (box t₁) t₂ ≈ msubst t₁ t₂
+
+    □-η : ∀ {A} {t : Δ ; Γ ⊢ (◻ A)}
+            → Δ ; Γ ⊢ (◻ A) ∶ t ≈ letbox t (box (var here))
+
+    □-δ₁ : ∀ {A} {t₁ t₂ : [] ; Δ ⊢ A}
+            → [] ; Δ ⊢ A ∶ t₁ ≈ t₂
+            → Δ ; Γ ⊢ ◻ A ∶ box t₁ ≈ box t₂
+
+    □-δ₂ : ∀ {A B} {t₁ t₂ : Δ ; Γ ⊢ (◻ A)} {u₁ u₂ : (Δ `, A) ; Γ ⊢ B}
+            → Δ ; Γ ⊢ (◻ A)    ∶ t₁ ≈ t₂
+            → (Δ `, A) ; Γ ⊢ B ∶ u₁ ≈ u₂
+            → Δ ; Γ ⊢ B ∶ letbox t₁ u₁ ≈ letbox t₂ u₂
+
+    -- equivalence relation
+    ≈-refl : ∀ {A} {t : Δ ; Γ  ⊢ A}
+            →  Δ ; Γ ⊢ A ∶ t ≈ t
+
+    ≈-sym : ∀ {A} {t₁ t₂ : Δ ; Γ ⊢ A}
+            →  Δ ; Γ ⊢ A ∶ t₁ ≈ t₂
+            →  Δ ; Γ ⊢ A ∶ t₂ ≈ t₁
+
+    ≈-trasn : ∀ {A} {t₁ t₂ t₃ : Δ ; Γ ⊢ A}
+                →  Δ ; Γ ⊢ A ∶ t₁ ≈ t₂
+                →  Δ ; Γ ⊢ A ∶ t₂ ≈ t₃
+                →  Δ ; Γ ⊢ A ∶ t₁ ≈ t₃
