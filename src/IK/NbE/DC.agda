@@ -113,20 +113,21 @@ module IK.NbE.DC where
   x-right-unit : Hom P (P x 𝟙)
   x-right-unit = pr id !
 
+  private
+    □-fmap : (f : ∀ {Δ'} → Δ ⊆ Δ' → P .iSet [] Δ' → Q .iSet [] Δ') → (□ P) .iSet Δ Γ → (□ Q) .iSet Δ Γ
+    □-fmap f (box p)      = box (f ⊆-refl p)
+    □-fmap f (letbox n p) = letbox n (□-fmap (λ Δa⊆Δ' → f (⊆-trans ⊆-`, Δa⊆Δ')) p)
+
   □-map :  Hom P Q → Hom (□ P) (□ Q)
-  □-map n .iFun (box x) = box (n .iFun x)
-  □-map n .iFun (letbox t k) = letbox t (□-map n .iFun k)
+  □-map n .iFun = □-fmap (λ Δ⊆Δ' → n .iFun)
 
   □-! : Hom P (□ 𝟙)
   □-! .iFun x = box tt
 
   private
     Box-pr : Box P Δ Γ → Box Q Δ Γ → Box (P x Q) Δ Γ
-    Box-pr (box t) u = aux t u
-      where aux : P .iSet [] Δ → Box Q Δ Γ → Box (P x Q) Δ Γ
-            aux t (box x) = box (t , x)
-            aux {P} t (letbox u k) = letbox u (aux (P .Wken base (drop ⊆-refl) t) k)
-    Box-pr (letbox t k) u = letbox t (Box-pr k (wkBox (drop ⊆-refl) ⊆-refl u))
+    Box-pr {P} (box t)      u = □-fmap (λ Δ⊆Δ' q → (P .Wken ⊆-refl Δ⊆Δ' t) , q) u
+    Box-pr     (letbox t k) u = letbox t (Box-pr k (wkBox ⊆-`, ⊆-refl u))
 
   □-pr : Hom O (□ P) → Hom O (□ Q) → Hom O (□ (P x Q))
   □-pr n m .iFun s = Box-pr (n .iFun s) (m .iFun s)
@@ -173,18 +174,18 @@ module IK.NbE.DC where
   reflect {◻ a} .iFun n = letbox n (box (reflect {a = a} .iFun (var here)))
 
   reify {a = 𝕓} .iFun x = x
-  reify {a = a ⇒ b} .iFun x = lam (reify .iFun (x ⊆-refl (drop ⊆-refl) (reflect {a = a} .iFun (var here))))
+  reify {a = a ⇒ b} .iFun x = lam (reify .iFun (x ⊆-refl ⊆-`, (reflect {a = a} .iFun (var here))))
   reify {a = ◻ a} .iFun (box x) = box (reify .iFun x)
   reify {a = ◻ a} .iFun (letbox n k) = Nf _ .letbox* n (reify .iFun k)
 
   -- identity substitution (this is special about the NbE model)
   idN : ⟦ Γ ⟧Ctx .iSet Δ Γ
   idN {[]} {Δ} = tt
-  idN {Γ `, x} {Δ} =  ⟦ Γ ⟧Ctx .Wken ⊆-refl (drop ⊆-refl) (idN {Γ}) , (reflect {x} .iFun (var here))
+  idN {Γ `, x} {Δ} =  ⟦ Γ ⟧Ctx .Wken ⊆-refl ⊆-`, (idN {Γ}) , (reflect {x} .iFun (var here))
 
   idM : ⟦ Δ ⟧MCtx .iSet Δ Γ
   idM {[]} {Γ} = box tt
-  idM {Δ `, a} {Γ} =  □-pr {O = ⟦ Δ ⟧MCtx x □ ⟦ a ⟧Ty} fst snd .iFun ((⟦ Δ ⟧MCtx .Wken (drop ⊆-refl) ⊆-refl idM) , box (reflect {a} .iFun (var here)))
+  idM {Δ `, a} {Γ} =  □-pr {O = ⟦ Δ ⟧MCtx x □ ⟦ a ⟧Ty} fst snd .iFun ((⟦ Δ ⟧MCtx .Wken ⊆-`, ⊆-refl idM) , box (reflect {a} .iFun (var here)))
 
   idₛ' : (⟦ Δ ⟧MCtx x ⟦ Γ ⟧Ctx) .iSet Δ Γ
   idₛ' {Δ} {Γ} = idM , (idN {Γ = Γ})

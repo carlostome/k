@@ -18,8 +18,11 @@ module IK.Calculus.DC where
     here : ∀ {Γ} → A ∈ (Γ `, A)
     there : ∀ {B Γ}  → A ∈ Γ → A ∈ (Γ `, B)
 
-  postulate
-    wken-var : ∀ {A} {Γ₁ Γ₂} → Γ₁ ⊆ Γ₂ → A ∈ Γ₁ → A ∈ Γ₂
+  wken-var : ∀ {A} {Γ₁ Γ₂} → Γ₁ ⊆ Γ₂ → A ∈ Γ₁ → A ∈ Γ₂
+  wken-var {Γ₁ = []} x ()
+  wken-var {Γ₁ = Γ₁ `, a} (keep x₁) here = here
+  wken-var {Γ₁ = Γ₁ `, a} (keep x₁) (there x₂) = there (wken-var x₁ x₂)
+  wken-var {Γ₁ = Γ₁ `, a} (drop x₁) x₂ = there (wken-var x₁ x₂)
 
   ⊆-refl : Reflexive _⊆_
   ⊆-refl {[]} = base
@@ -89,7 +92,7 @@ module IK.Calculus.DC where
 
   Ne⇒Nf : ∀ {a} {Δ} {Γ}→ Δ ; Γ ⊢Ne a → Δ ; Γ ⊢Nf a
   Ne⇒Nf {𝕓} t = up t
-  Ne⇒Nf {a ⇒ b} t = lam (Ne⇒Nf (app (wkNe ⊆-refl (drop ⊆-refl) t) (Ne⇒Nf (var here))))
+  Ne⇒Nf {a ⇒ b} t = lam (Ne⇒Nf (app (wkNe ⊆-refl ⊆-`, t) (Ne⇒Nf (var here))))
   Ne⇒Nf {◻ a} t = letbox t (box (Ne⇒Nf (var here)))
 
   mutual
@@ -102,4 +105,3 @@ module IK.Calculus.DC where
     Nf⇒Tm (box x) = box (Nf⇒Tm x)
     Nf⇒Tm (letbox x x₁) = letbox (Ne⇒Tm x) (Nf⇒Tm x₁)
     Nf⇒Tm (up x) = Ne⇒Tm x
-    
