@@ -8,6 +8,9 @@ module IK.Calculus.DC where
     []   : Ctx
     _`,_ : Ctx → Ty → Ctx
 
+  private
+    variable
+      Δ Γ : Ctx
   infix 19 _⊆_
   data _⊆_ : Ctx → Ctx → Set where
     base : [] ⊆ []
@@ -166,7 +169,7 @@ module IK.Calculus.DC where
   postulate
     subst : ∀ {Γ} {Δ} {A B} → Δ ; Γ ⊢ A → Δ ; (Γ `, A) ⊢ B → Δ ; Γ ⊢ B
 
-  -- equational theory w/o commuting conversions
+  -- equational theory w/o commuting conversions?
   data _;_⊢_∶_≈_ (Δ Γ : Ctx) : (A : Ty) → (t₁ t₂ : Δ ; Γ ⊢ A) → Set where
 
     -- rules for ⇒
@@ -179,6 +182,7 @@ module IK.Calculus.DC where
     ⇒-δ₁ : ∀ {A B} {t₁ t₂ : Δ ; (Γ `, A) ⊢ B}
            → Δ ; (Γ `, A) ⊢ B ∶ t₁ ≈ t₂
            → Δ ; Γ ⊢ (A ⇒ B) ∶ lam t₁ ≈ lam t₂
+
     ⇒-δ₂ : ∀ {A B} {t₁ t₂ : Δ ; Γ ⊢ (A ⇒ B)} {u₁ u₂ : Δ ; Γ ⊢ A}
            → Δ ; Γ ⊢ (A ⇒ B) ∶ t₁ ≈ t₂
            → Δ ; Γ ⊢ A ∶ u₁ ≈ u₂
@@ -200,6 +204,10 @@ module IK.Calculus.DC where
             → (Δ `, A) ; Γ ⊢ B ∶ u₁ ≈ u₂
             → Δ ; Γ ⊢ B ∶ letbox t₁ u₁ ≈ letbox t₂ u₂
 
+    -- commuting conversions?
+    □-⇒ : ∀ {A B C} {t₁ : Δ ; Γ ⊢ (◻ A)} {t₂ : (Δ `, A) ; Γ ⊢ (B ⇒ C)} {t₃ : Δ ; Γ ⊢ B}
+            →  Δ ; Γ ⊢ C ∶ app (letbox t₁ t₂) t₃ ≈  letbox t₁ (app t₂ (wken ⊆-`, ⊆-refl t₃))
+
     -- equivalence relation
     ≈-refl : ∀ {A} {t : Δ ; Γ  ⊢ A}
             →  Δ ; Γ ⊢ A ∶ t ≈ t
@@ -212,3 +220,44 @@ module IK.Calculus.DC where
                 →  Δ ; Γ ⊢ A ∶ t₁ ≈ t₂
                 →  Δ ; Γ ⊢ A ∶ t₂ ≈ t₃
                 →  Δ ; Γ ⊢ A ∶ t₁ ≈ t₃
+
+  -- reduction relation
+  data _⟶_ {Δ Γ : Ctx} : Δ ; Γ ⊢ a → Δ ; Γ ⊢ a → Set where
+  
+    -- functions
+    red-fun : {t : Δ ; (Γ `, a) ⊢ b} {u : Δ ; Γ ⊢ a}
+      → app (lam t) u ⟶ subst u t
+  
+    cong-lam : {t t' : Δ ; (Γ `, a) ⊢ b}
+      → t ⟶ t'
+      → lam t ⟶ lam t'
+
+    cong-app1 : {t t' : Δ ; Γ ⊢ (a ⇒ b)} {u : Δ ; Γ ⊢ a}
+      → t ⟶ t'
+      → app t u ⟶ app t' u
+  
+    cong-app2 : {t : Δ ; Γ ⊢ (a ⇒ b)} {u u' : Δ ; Γ ⊢ a}
+      → u ⟶ u'
+      → (app t u) ⟶ (app t u')
+
+    -- boxes
+    cong-box : {t t' : [] ; Δ ⊢ a}
+      → t ⟶ t'
+      → box t ⟶ box t'
+
+    red-box : ∀ {A B} {t₁ : [] ; Δ ⊢ A} {t₂ : (Δ `, A) ; Γ ⊢ B}
+               →  letbox (box t₁) t₂ ⟶ msubst t₁ t₂
+
+    cong-letbox1 : ∀ {A B} {t₁ t₂ : Δ ; Γ ⊢ (◻ A)} {u : (Δ `, A) ; Γ ⊢ B}
+                    → t₁ ⟶ t₂
+                    → letbox t₁ u ⟶ letbox t₂ u
+
+    cong-letbox2 : ∀ {A B} {t : Δ ; Γ ⊢ (◻ A)} {u₁ u₂ : (Δ `, A) ; Γ ⊢ B}
+                    → u₁ ⟶ u₂
+                    → letbox t u₁ ⟶ letbox t u₂
+
+    assoc-letbox : ∀ {A B C} {t : Δ ; Γ ⊢ (◻ A)} {u₁ : (Δ `, A) ; Γ ⊢ (◻ B)} {u₂ : (Δ `, B) ; Γ ⊢ C}
+                    → letbox (letbox t u₁) u₂ ⟶ letbox t (letbox u₁ (wken-⊑ (⊑-keep (⊑-drop ⊑-refl)) ⊑-refl u₂))
+
+    comm-letbox : ∀ {A B C} {t₁ : Δ ; Γ ⊢ (◻ A)} {t₂ : (Δ `, A) ; Γ ⊢ (B ⇒ C)} {t₃ : Δ ; Γ ⊢ B}
+            →  app (letbox t₁ t₂) t₃ ⟶ letbox t₁ (app t₂ (wken ⊆-`, ⊆-refl t₃))

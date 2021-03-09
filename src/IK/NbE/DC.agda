@@ -197,3 +197,6 @@ module IK.NbE.DC where
   -- normalization function
   norm : Δ ; Γ ⊢ a → Δ ; Γ ⊢Nf a
   norm t = quot (⟦ t ⟧Tm)
+
+  ex : [] ; [] ⊢Nf (𝕓 ⇒ 𝕓)
+  ex = norm (app (letbox (box (lam {A = 𝕓} (var here))) (lam (lam (var here)))) (lam {A = 𝕓} (var here)))
