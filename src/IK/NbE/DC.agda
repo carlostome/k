@@ -46,22 +46,27 @@ module IK.NbE.DC where
                   ; Wken = wken
                   ; letbox* = λ x x₁ → letbox (Nf⇒Tm (Ne⇒Nf x)) x₁}
 
+  private
+    Ne-letbox* : Δ ; Γ ⊢Ne (◻ a) → (Δ `, a) ; Γ ⊢Ne b → Δ ; Γ ⊢Ne b
+    Ne-letbox* x (var v)   = var v
+    Ne-letbox* x (app t u) = app (Ne-letbox* x t) (letbox x u)
+ 
   Ne : Ty → Psh
   Ne A = record { iSet = _;_⊢Ne A
                 ; Wken = wkNe
-                ; letbox* = λ n k → letbox n (Ne⇒Nf k)}
+                ; letbox* = Ne-letbox*}
 
   Nf : Ty → Psh
   Nf A = record { iSet = _;_⊢Nf A
                 ; Wken = wkNf
-                ; letbox* = λ x x₁ → Ne⇒Nf (letbox x x₁)}
+                ; letbox* = λ x x₁ → letbox x x₁}
 
   
   open import Data.Unit
 
   private
     variable
-      P Q O : Psh
+      P P' Q Q' O : Psh
 
   𝟙 : Psh
   𝟙 = record { iSet = λ x x₁ → ⊤ ; Wken = λ x x₁ x₂ → tt }
@@ -75,19 +80,46 @@ module IK.NbE.DC where
   Hom : Psh → Psh → Set
   Hom P Q = P →̇ Q
 
+  id : Hom P P
+  id .iFun p = p
+
+  _∘_ : Hom P Q → Hom O P → Hom O Q
+  (n ∘ m) .iFun o = n .iFun (m .iFun o)
+
+  ! : Hom P 𝟙
+  ! .iFun _ = tt
+
+  fst : Hom (P x Q) P
+  fst .iFun (p , q) = p
+
+  snd : Hom (P x Q) Q
+  snd .iFun (p , q) = q
+
+  pr : Hom O P → Hom O Q → Hom O (P x Q)
+  pr p q .iFun o = p .iFun o , q .iFun o
+
+  _x-map_ : Hom P P' → Hom Q Q' → Hom (P x Q) (P' x Q')
+  n x-map m = pr (n ∘ fst) (m ∘ snd)
+
+  x-left-assoc : Hom (O x (P x Q)) ((O x P) x Q)
+  x-left-assoc = pr (pr fst (fst ∘ snd)) (snd ∘ snd)
+
+  x-right-assoc : Hom ((O x P) x Q) (O x (P x Q))
+  x-right-assoc = pr  (fst ∘ fst) (pr (snd ∘ fst) snd)
+
+  x-left-unit : Hom P (𝟙 x P)
+  x-left-unit = pr ! id
+
+  x-right-unit : Hom P (P x 𝟙)
+  x-right-unit = pr id !
+
+  □-map :  Hom P Q → Hom (□ P) (□ Q)
+  □-map n .iFun (box x) = box (n .iFun x)
+  □-map n .iFun (letbox t k) = letbox t (□-map n .iFun k)
+
   postulate
-    _∘_ : Hom P Q → Hom O P → Hom O Q
-    x-left-assoc : Hom (O x (P x Q)) ((O x P) x Q)
-    x-right-assoc : Hom ((O x P) x Q) (O x (P x Q))
-    □-map :  Hom P Q → Hom (□ P) (□ Q)
     □-pr : Hom O (□ P) → Hom O (□ Q) → Hom O (□ (P x Q))
     □-! : Hom P (□ 𝟙)
-    x-left-unit : Hom P (𝟙 x P)
-    x-right-unit : Hom P (P x 𝟙)
-    fst : Hom (P x Q) P
-    snd : Hom (P x Q) Q
-    pr : Hom O P → Hom O Q → Hom O (P x Q)
-    ! : Hom P 𝟙
     abs : Hom (O x P) Q → Hom O (P ⇒̇ Q)
     ev : Hom ((P ⇒̇ Q) x P) Q
 

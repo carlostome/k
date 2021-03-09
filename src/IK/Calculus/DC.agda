@@ -66,24 +66,36 @@ module IK.Calculus.DC where
      data _;_⊢Ne_ (Δ Γ : Ctx) : Ty → Set where
        var   : ∀ {A}   → A ∈ Γ → Δ ; Γ ⊢Ne A
        app   : ∀ {A B} → Δ ; Γ ⊢Ne (A ⇒ B) → Δ ; Γ ⊢Nf A → Δ ; Γ ⊢Ne B
-       letbox : ∀ {A B} → Δ ; Γ ⊢Ne (◻ A) → (Δ `, A) ; Γ ⊢Nf B → Δ ; Γ ⊢Ne B
 
      data _;_⊢Nf_ (Δ Γ : Ctx) : Ty → Set where
        lam : ∀ {A B} → Δ ; (Γ `, A) ⊢Nf B → Δ ; Γ ⊢Nf (A ⇒ B)
        box : ∀ {A} → [] ; Δ ⊢Nf A → Δ ; Γ ⊢Nf (◻ A)
+       letbox : ∀ {A B} → Δ ; Γ ⊢Ne (◻ A) → (Δ `, A) ; Γ ⊢Nf B → Δ ; Γ ⊢Nf B
        up : Δ ; Γ ⊢Ne 𝕓 → Δ ; Γ ⊢Nf 𝕓
 
      wkNe : ∀ {A} {Δ₁ Δ₂} {Γ₁ Γ₂} → Δ₁ ⊆ Δ₂ → Γ₁ ⊆ Γ₂ → Δ₁ ; Γ₁ ⊢Ne A → Δ₂ ; Γ₂ ⊢Ne A
      wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ (var x) = var (wken-var Γ₁⊆Γ₂ x)
-     wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ (letbox x t) = letbox (wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ x) (wkNf (keep Δ₁⊆Δ₂) Γ₁⊆Γ₂ t)
      wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ (app t x) = app (wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ t) (wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ x)
 
      wkNf : ∀ {A} {Δ₁ Δ₂} {Γ₁ Γ₂} → Δ₁ ⊆ Δ₂ → Γ₁ ⊆ Γ₂ → Δ₁ ; Γ₁ ⊢Nf A → Δ₂ ; Γ₂ ⊢Nf A
      wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ (lam t) = lam (wkNf Δ₁⊆Δ₂ (keep Γ₁⊆Γ₂) t)
+     wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ (letbox x t) = letbox (wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ x) (wkNf (keep Δ₁⊆Δ₂) Γ₁⊆Γ₂ t)
      wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ (box t) = box (wkNf base Δ₁⊆Δ₂ t)
      wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ (up t) = up (wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ t)
 
-  postulate
-     Ne⇒Nf : ∀ {A} {Δ} {Γ}→ Δ ; Γ ⊢Ne A → Δ ; Γ ⊢Nf A
-     Nf⇒Tm : ∀ {A} {Δ} {Γ}→ Δ ; Γ ⊢Nf A → Δ ; Γ ⊢ A
+  Ne⇒Nf : ∀ {a} {Δ} {Γ}→ Δ ; Γ ⊢Ne a → Δ ; Γ ⊢Nf a
+  Ne⇒Nf {𝕓} t = up t
+  Ne⇒Nf {a ⇒ b} t = lam (Ne⇒Nf (app (wkNe ⊆-refl (drop ⊆-refl) t) (Ne⇒Nf (var here))))
+  Ne⇒Nf {◻ a} t = letbox t (box (Ne⇒Nf (var here)))
+
+  mutual
+    Ne⇒Tm : ∀ {a} {Δ} {Γ}→ Δ ; Γ ⊢Ne a → Δ ; Γ ⊢ a
+    Ne⇒Tm (var x) = var x
+    Ne⇒Tm (app x x₁) = app (Ne⇒Tm x) (Nf⇒Tm x₁)
+
+    Nf⇒Tm : ∀ {A} {Δ} {Γ}→ Δ ; Γ ⊢Nf A → Δ ; Γ ⊢ A
+    Nf⇒Tm (lam x) = lam (Nf⇒Tm x)
+    Nf⇒Tm (box x) = box (Nf⇒Tm x)
+    Nf⇒Tm (letbox x x₁) = letbox (Ne⇒Tm x) (Nf⇒Tm x₁)
+    Nf⇒Tm (up x) = Ne⇒Tm x
     
