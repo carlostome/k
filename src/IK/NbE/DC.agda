@@ -193,5 +193,28 @@ module IK.NbE.DC where
   norm : Δ ; Γ ⊢ a → Δ ; Γ ⊢Nf a
   norm t = quot (⟦ t ⟧Tm)
 
-  ex : [] ; [] ⊢Nf (𝕓 ⇒ 𝕓)
-  ex = norm (app (letbox (box (lam {A = 𝕓} (var here))) (lam (lam (var here)))) (lam {A = 𝕓} (var here)))
+  -- ex : [] ; [] ⊢Nf (𝕓 ⇒ 𝕓)
+  -- ex = norm (app (letbox (box (lam {A = 𝕓} (var here))) (lam (lam (var here)))) (lam {A = 𝕓} (var here)))
+
+  -----------------------
+  -- Logical Relations --
+  -----------------------
+
+  wken-sem-ctx : ∀ {Γ₁ Γ₂} → Γ₁ ⊆ Γ₂ →  Hom (⟦ Γ₂ ⟧Ctx) (⟦ Γ₁ ⟧Ctx)
+  wken-sem-ctx {Γ₂ = []} base .iFun x = x
+  wken-sem-ctx {Γ₂ = Γ₂ `, a} (keep Γ₁⊆Γ₂) .iFun (γ , t) = wken-sem-ctx Γ₁⊆Γ₂ .iFun γ , t
+  wken-sem-ctx {Γ₂ = Γ₂ `, a} (drop Γ₁⊆Γ₂) .iFun (γ , t) = wken-sem-ctx Γ₁⊆Γ₂ .iFun γ
+
+  wken-sem : ∀ {a} {Δ₁ Δ₂} {Γ₁ Γ₂} → Δ₁ ⊆ Δ₂ → Γ₁ ⊆ Γ₂ → ⟦ Δ₁ ; Γ₁ ⊢ a ⟧ → ⟦ Δ₂ ; Γ₂ ⊢ a ⟧
+  wken-sem {Δ₁ = Δ₁} {Γ₁ = Γ₁} Δ₁⊆Δ₂ Γ₁⊆Γ₂ t = t ∘ (□-map (wken-sem-ctx Δ₁⊆Δ₂) x-map (wken-sem-ctx Γ₁⊆Γ₂))
+
+  open import Relation.Binary.PropositionalEquality
+
+  RTm : {a : Ty} {Δ Γ : Ctx} → Δ ; Γ ⊢ a → ⟦ Δ ; Γ ⊢ a ⟧  → Set
+  RTm {𝕓} t x = t ≈ Nf⇒Tm (quot x)
+  RTm {a ⇒ b} {Δ} {Γ} t f =
+    {Δ' Γ' : Ctx} {u : Δ' ; Γ' ⊢ a} {x : Hom (⟦ Δ' ⟧MCtx x ⟦ Γ' ⟧Ctx) ⟦ a ⟧Ty}
+     → (Δ⊆Δ' : Δ ⊆ Δ') → (Γ⊆Γ' : Γ ⊆ Γ')
+     → RTm u x → RTm (app (wken Δ⊆Δ' Γ⊆Γ' t) u) (ev ∘ pr (wken-sem {a = a ⇒ b}  Δ⊆Δ' Γ⊆Γ' f) x)
+  RTm {◻ a} t x = {!!}
+  -- ∃ λ u → Rt u x × t ⟶* box u
