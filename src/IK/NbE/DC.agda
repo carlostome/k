@@ -1,6 +1,8 @@
 module IK.NbE.DC where
 
   open import Data.Product
+  open import Relation.Binary.PropositionalEquality
+
   open import IK.Calculus.DC
 
   ISet = Ctx → Ctx → Set
@@ -17,6 +19,7 @@ module IK.NbE.DC where
     variable
       Γ Δ : Ctx
 
+  -- this seems to be a lax monoidal functor, not a product-preserving functor
   data Box (P : Psh) (Δ Γ : Ctx) : Set where
     box : P .iSet []  Δ → Box P Δ Γ
     letbox : ∀ {a} → Δ ; Γ ⊢Ne (◻ a) → Box P (Δ `, a) Γ → Box P Δ Γ
@@ -83,6 +86,7 @@ module IK.NbE.DC where
   id : Hom P P
   id .iFun p = p
 
+  infixr 19 _∘_
   _∘_ : Hom P Q → Hom O P → Hom O Q
   (n ∘ m) .iFun o = n .iFun (m .iFun o)
 
@@ -97,21 +101,6 @@ module IK.NbE.DC where
 
   pr : Hom O P → Hom O Q → Hom O (P x Q)
   pr p q .iFun o = p .iFun o , q .iFun o
-
-  _x-map_ : Hom P P' → Hom Q Q' → Hom (P x Q) (P' x Q')
-  n x-map m = pr (n ∘ fst) (m ∘ snd)
-
-  x-left-assoc : Hom (O x (P x Q)) ((O x P) x Q)
-  x-left-assoc = pr (pr fst (fst ∘ snd)) (snd ∘ snd)
-
-  x-right-assoc : Hom ((O x P) x Q) (O x (P x Q))
-  x-right-assoc = pr  (fst ∘ fst) (pr (snd ∘ fst) snd)
-
-  x-left-unit : Hom P (𝟙 x P)
-  x-left-unit = pr ! id
-
-  x-right-unit : Hom P (P x 𝟙)
-  x-right-unit = pr id !
 
   private
     □-fmap : (f : ∀ {Δ'} → Δ ⊆ Δ' → P .iSet [] Δ' → Q .iSet [] Δ') → (□ P) .iSet Δ Γ → (□ Q) .iSet Δ Γ
@@ -139,29 +128,35 @@ module IK.NbE.DC where
   ev .iFun (n , m) = n ⊆-refl ⊆-refl m
 
   open import IK.Semantics.KripkeCat.Model
+  open ProductCat Psh Hom 𝟙 _x_ _∘_ fst snd pr
+
+  postulate
+    □-pr-left-unit  : ∀ {P}     → □-map x-left-unit   ∘ □-pr □-! snd                   ≡ x-left-unit  {□ P}
+    □-pr-right-unit : ∀ {P}     → □-map x-right-unit  ∘ □-pr fst □-!                   ≡ x-right-unit {□ P}
+    □-pr-assoc      : ∀ {O P Q} → □-map x-right-assoc ∘ □-pr (□-pr fst snd ∘ fst) snd  ≡ □-pr fst (□-pr fst snd ∘ snd) ∘ x-right-assoc {□ O} {□ P} {□ Q}
 
   NbEModel : KripkeCat
   NbEModel = record
-               { Obj = Psh
-               ; Hom = Hom
-               ; _x_ = _x_
-               ; _⇒̇_ = _⇒̇_
-               ; □_ = □_
-               ; 𝟙 = 𝟙
-               ; _∘_ = _∘_
-               ; x-left-assoc = x-left-assoc
-               ; x-right-assoc = x-right-assoc 
-               ; □-map = □-map
-               ; □-pr = □-pr
-               ; □-! = □-!
-               ; x-left-unit = x-left-unit
-               ; x-right-unit = x-right-unit
-               ; fst = fst
-               ; snd = snd
-               ; pr = pr
-               ; ! = !
-               ; abs = abs
-               ; ev = ev
+               { Obj             = Psh
+               ; Hom             = Hom
+               ; _x_             = _x_
+               ; _⇒̇_             = _⇒̇_
+               ; □_              = □_
+               ; 𝟙               = 𝟙
+               ; id              = id
+               ; _∘_             = _∘_
+               ; □-map           = □-map
+               ; □-pr            = □-pr
+               ; □-!             = □-!
+               ; fst             = fst
+               ; snd             = snd
+               ; pr              = pr
+               ; !               = !
+               ; abs             = abs
+               ; ev              = ev
+               ; □-pr-left-unit  = □-pr-left-unit
+               ; □-pr-right-unit = □-pr-right-unit
+               ; □-pr-assoc      = □-pr-assoc
                }
 
   open import IK.Semantics.KripkeCat.Interpretation.DC NbEModel (Nf 𝕓)
@@ -191,7 +186,7 @@ module IK.NbE.DC where
   idₛ' {Δ} {Γ} = idM , (idN {Γ = Γ})
   
   -- retraction of interpretation
-  quot : Hom (⟦ Δ ⟧MCtx x ⟦ Γ ⟧Ctx) ⟦ a ⟧Ty → Δ ; Γ ⊢Nf a
+  quot : ⟦ Δ ; Γ ⊢ a ⟧ → Δ ; Γ ⊢Nf a
   quot {Γ} n = reify .iFun (n .iFun idₛ')
   
   -- normalization function

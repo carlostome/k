@@ -23,7 +23,10 @@ module IK.Semantics.KripkeCat.Interpretation.DC (KC : KripkeCat) (let open Kripk
   ⟦ here   ⟧Var = snd
   ⟦ there v ⟧Var = ⟦ v ⟧Var ∘ fst
 
-  ⟦_⟧Tm : Δ ; Γ ⊢ a → Hom (⟦ Δ ⟧MCtx x ⟦ Γ ⟧Ctx) ⟦ a ⟧Ty
+  ⟦_;_⊢_⟧ : (Δ Γ : Ctx) (a : Ty) → Set
+  ⟦ Δ ; Γ ⊢ a ⟧ = Hom (⟦ Δ ⟧MCtx x ⟦ Γ ⟧Ctx) ⟦ a ⟧Ty
+
+  ⟦_⟧Tm : Δ ; Γ ⊢ a → ⟦ Δ ; Γ ⊢ a ⟧
   ⟦ var v      ⟧Tm = ⟦ v  ⟧Var ∘ snd
   ⟦ app t u    ⟧Tm = ev ∘ pr ⟦ t ⟧Tm ⟦ u ⟧Tm
   ⟦ lam t      ⟧Tm = abs (⟦ t ⟧Tm ∘ x-right-assoc)

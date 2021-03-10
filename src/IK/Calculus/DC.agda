@@ -11,7 +11,9 @@ module IK.Calculus.DC where
   private
     variable
       Δ Γ : Ctx
+
   infix 19 _⊆_
+
   data _⊆_ : Ctx → Ctx → Set where
     base : [] ⊆ []
     keep : ∀ {T Γ Δ} → Γ ⊆ Δ → (Γ `, T) ⊆ (Δ `, T)
