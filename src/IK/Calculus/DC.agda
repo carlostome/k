@@ -12,6 +12,10 @@ module IK.Calculus.DC where
     variable
       Δ Γ : Ctx
 
+  _++_ : Ctx → Ctx → Ctx
+  Γ ++ [] = Γ
+  Δ ++ (Γ `, A) = (Δ ++ Γ `, A)
+
   infixl 18 _`,_
   infix  17 _∈_
   infix  17 _⊆_
@@ -183,78 +187,39 @@ module IK.Calculus.DC where
     Nf⇒Tm (up x) = Ne⇒Tm x
     Nf⇒Tm (prd t t₁) = prd (Nf⇒Tm t) (Nf⇒Tm t₁)
 
-  _⊑_ : Ctx → Ctx → Set
-  Γ₁ ⊑ Γ₂ = ∀ {A} → A ∈ Γ₁ → A ∈ Γ₂
+  cut : ∀ {Γ} {Δ} {A B} {Γ'} → Δ ; Γ ⊢ A  → (t : Δ ; ((Γ `, A) ++ Γ') ⊢ B)
+           → Δ ; (Γ ++ Γ') ⊢ B
+  cut u (var x) = aux _ x u
+    where aux : ∀ {Γ} {Δ} {A B} Γ' → B ∈ (Γ `, A) ++ Γ' → (u : Δ ; Γ ⊢ A) → Δ ; Γ ++ Γ' ⊢ B
+          aux [] here u = u
+          aux [] (there x) u = var x
+          aux (Γ' `, a) here u = var here
+          aux (Γ' `, a) (there x) u = wken ⊆-refl ⊆-`, (aux Γ' x u)
+  cut u (app t t₁) = app (cut u t) (cut u t₁)
+  cut u (lam t) = lam (cut u t)
+  cut u (fst t) = fst (cut u t)
+  cut u (snd t) = snd (cut u t)
+  cut u (prd t t₁) = prd (cut u t) (cut u t₁)
+  cut u (box t) = box t
+  cut u (letbox t t₁) = letbox (cut u t) (cut (wken ⊆-`, ⊆-refl u) t₁)
 
-  ⊑-refl : Reflexive _⊑_
-  ⊑-refl x = x
+  subst : ∀ {Γ} {Δ} {A B} → Δ ; Γ ⊢ A → Δ ; (Γ `, A) ⊢ B → Δ ; Γ ⊢ B
+  subst u t = cut u t
 
-  ⊑-drop : ∀ {T Γ Δ} → Γ ⊑ Δ → Γ ⊑ (Δ `, T)
-  ⊑-drop x here = there (x here)
-  ⊑-drop x (there x₁) = there (x (⊑-drop ⊑-refl x₁))
+  mcut : ∀ {Γ} {Δ} {A B} {Δ'} → [] ; Δ ⊢ A  → (t : ((Δ `, A) ++ Δ') ; Γ ⊢ B)
+             → (Δ ++ Δ') ; Γ ⊢ B
+  mcut t (var x) = var x
+  mcut t (app u u₁) = app (mcut t u) (mcut t u₁)
+  mcut t (lam u) = lam (mcut t u)
+  mcut t (fst u) = fst (mcut t u)
+  mcut t (snd u) = snd (mcut t u)
+  mcut t (prd u u₁) = prd (mcut t u) (mcut t u₁)
+  mcut t (box u) = box (cut t u)
+  mcut t (letbox u u₁) = letbox (mcut t u) (mcut t u₁)
 
-  ⊑-keep : ∀ {T Γ Δ} → Γ ⊑ Δ → (Γ `, T) ⊑ (Δ `, T)
-  ⊑-keep x here = here
-  ⊑-keep x (there x₁) = there (x x₁)
-
-  wken-⊑ : ∀ {A} {Δ₁ Δ₂} {Γ₁ Γ₂} → Δ₁ ⊑ Δ₂ → Γ₁ ⊑ Γ₂ → Δ₁ ; Γ₁ ⊢ A → Δ₂ ; Γ₂ ⊢ A
-  wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ (var x) = var (Γ₁⊑Γ₂ x)
-  wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ (app t t₁) = app (wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ t) (wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ t₁)
-  wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ (lam t) = lam (wken-⊑ Δ₁⊑Δ₂ (⊑-keep Γ₁⊑Γ₂) t)
-  wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ (box t) = box (wken-⊑ (λ z → z) Δ₁⊑Δ₂ t)
-  wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ (letbox t t₁) = letbox (wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ t) (wken-⊑ (⊑-keep Δ₁⊑Δ₂) Γ₁⊑Γ₂ t₁)
-  wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ (fst t) = fst (wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ t)
-  wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ (snd t) = snd (wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ t)
-  wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ (prd t t₁) = prd (wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ t) (wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ t₁)
-
-  open import Data.Nat
-  open import Data.Nat.Properties
-  open import Data.Nat.Induction
-  open import Induction.WellFounded
-
-  size : ∀ {Γ} {A} {Δ} → Δ ; Γ ⊢ A → ℕ
-  size (var x) = zero
-  size (app x x₁) = 1 + size x + size x₁
-  size (lam x) = 1 + size x
-  size (box x) = 1 + size x
-  size (letbox x x₁) = 1 + size x + size x₁
-  size (fst t) = 1 + size t
-  size (snd t) = 1 + size t
-  size (prd t t₁) = 1 + size t + size t₁
-
-  wken-⊑-size : ∀ {A} {Γ₁ Γ₂} {Δ₁ Δ₂} → (Δ₁⊑Δ₂ : Δ₁ ⊑ Δ₂) → (Γ₁⊑Γ₂ : Γ₁ ⊑ Γ₂)
-                   →  (t : Δ₁ ; Γ₁ ⊢ A) → size (wken-⊑ Δ₁⊑Δ₂ Γ₁⊑Γ₂ t) ≤ size t
-  wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ (var x) = z≤n
-  wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ (app t t₁) = s≤s (+-mono-≤ (wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ t) (wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ t₁))
-  wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ (lam t) = s≤s (wken-⊑-size Δ₁⊑Δ₂ (⊑-keep Γ₁⊑Γ₂) t)
-  wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ (box t) = s≤s (wken-⊑-size (λ z → z) Δ₁⊑Δ₂ t)
-  wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ (letbox t t₁) = s≤s (+-mono-≤ (wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ t) (wken-⊑-size (⊑-keep Δ₁⊑Δ₂) Γ₁⊑Γ₂ t₁))
-  wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ (fst t) = s≤s (wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ t)
-  wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ (snd t) = s≤s (wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ t)
-  wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ (prd t t₁) = s≤s (+-mono-≤ (wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ t) (wken-⊑-size Δ₁⊑Δ₂ Γ₁⊑Γ₂ t₁))
-
-  msubst : ∀ {Γ} {Δ} {A B} → [] ; Δ ⊢ A  → (t : (Δ `, A) ; Γ ⊢ B)  → Δ ; Γ ⊢ B
-  msubst t u = aux t u (<′-wellFounded (size u))
-    where aux : ∀ {Γ} {Δ} {A B} → [] ; Δ ⊢ A  → (t : (Δ `, A) ; Γ ⊢ B) → Acc (_<′_) (size t) → Δ ; Γ ⊢ B
-          aux t (var x) (acc rs) = var x
-          aux t (app u u₁) (acc rs) = app (aux t u (rs (size u) (s≤′s (≤⇒≤′ (m≤m+n (size u) (size u₁))))))
-                                          (aux t u₁ (rs (size u₁) (s≤′s (≤⇒≤′ (m≤n+m (size u₁) (size u))))))
-          aux t (lam u) (acc rs) = lam (aux t u (rs (size u) (s≤′s (≤⇒≤′ ≤-refl))))
-          aux t (box u) (acc rs) = box (app (lam u) t)
-          aux t (fst u) (acc rs) = fst (aux t u (rs (size u) (s≤′s (≤⇒≤′ ≤-refl))))
-          aux t (snd u) (acc rs) = snd (aux t u (rs (size u) (s≤′s (≤⇒≤′ ≤-refl))))
-          aux t (prd u u₁) (acc rs) = prd (aux t u (rs (size u) (s≤′s (≤⇒≤′ (m≤m+n (size u) (size u₁))))))
-                                          (aux t u₁ (rs (size u₁) (s≤′s (≤⇒≤′ (m≤n+m (size u₁) (size u))))))
-          aux t (letbox u u₁) (acc rs) = letbox ((aux t u (rs (size u) (s≤′s (≤⇒≤′ (m≤m+n (size u) (size u₁)))))))
-                                         (aux (wken-⊑ ⊑-refl (⊑-drop ⊑-refl) t) (wken-⊑ p ⊑-refl u₁)
-                                         (rs (size (wken-⊑ p ⊑-refl u₁)) (s≤′s (≤⇒≤′ (≤-trans (wken-⊑-size p ⊑-refl u₁) (m≤n+m (size u₁) (size u)))))))
-              where p : ∀ {Δ} {A} {B} →  ((Δ `, B) `, A) ⊑ ((Δ `, A) `, B)
-                    p here = there here
-                    p (there here) = here
-                    p (there (there x)) = there (there x)
-
-  postulate
-    subst : ∀ {Γ} {Δ} {A B} → Δ ; Γ ⊢ A → Δ ; (Γ `, A) ⊢ B → Δ ; Γ ⊢ B
+  msubst : ∀ {Γ} {Δ} {A B} → [] ; Δ ⊢ A  → (t : (Δ `, A) ; Γ ⊢ B)
+               → Δ ; Γ ⊢ B
+  msubst = mcut
 
   -- equational theory w/o commuting conversions?
   data _;_⊢_∶_≈_ (Δ Γ : Ctx) : (A : Ty) → (t₁ t₂ : Δ ; Γ ⊢ A) → Set where
