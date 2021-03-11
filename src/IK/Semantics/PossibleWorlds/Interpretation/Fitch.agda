@@ -29,14 +29,14 @@ module _ (⟦𝕓⟧ : Obj) where
 
   ⟦_⟧Wk : Wk Δ Γ → Hom ⟦ Δ ⟧Ctx ⟦ Γ ⟧Ctx
   ⟦ base       ⟧Wk = id
-  ⟦ drop   Γ≤Δ ⟧Wk = ⟦ Γ≤Δ ⟧Wk ∘ fst
+  ⟦ drop   Γ≤Δ ⟧Wk = ⟦ Γ≤Δ ⟧Wk ∘ π₁
   ⟦ keep   Γ≤Δ ⟧Wk = ⟦ Γ≤Δ ⟧Wk x-map id
   ⟦ drop🔒 Γ≤Δ ⟧Wk = !
   ⟦ keep🔒 Γ≤Δ ⟧Wk = ◆-map ⟦ Γ≤Δ ⟧Wk
 
   ⟦_⟧Var : Var Γ a → Hom ⟦ Γ ⟧Ctx ⟦ a ⟧Ty
-  ⟦ ze   ⟧Var = snd
-  ⟦ su v ⟧Var = ⟦ v ⟧Var ∘ fst
+  ⟦ ze   ⟧Var = π₂
+  ⟦ su v ⟧Var = ⟦ v ⟧Var ∘ π₁
 
   ⟦_⟧Tm : Tm Γ a → Hom ⟦ Γ ⟧Ctx ⟦ a ⟧Ty
   ⟦ var   v   ⟧Tm = ⟦ v ⟧Var

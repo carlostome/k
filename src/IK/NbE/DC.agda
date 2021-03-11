@@ -3,7 +3,7 @@ module IK.NbE.DC where
   open import Data.Product
   open import Relation.Binary.PropositionalEquality
 
-  open import IK.Calculus.DC
+  open import IK.Calculus.DC hiding (!; _,_)
 
   ISet = Ctx → Ctx → Set
 
@@ -42,12 +42,14 @@ module IK.NbE.DC where
   Tm : Ty → Psh
   Tm A = record { iSet = _;_⊢ A
                   ; Wken = wken
-                  ; letbox* = λ x x₁ → letbox (Nf⇒Tm (Ne⇒Nf x)) x₁}
+                  ; letbox* = λ x x₁ → letbox (Nf⇒Tm (Ne⇒Nf x)) In x₁}
 
   private
     Ne-letbox* : Δ ; Γ ⊢Ne (◻ a) → (Δ `, a) ; Γ ⊢Ne b → Δ ; Γ ⊢Ne b
     Ne-letbox* x (var v)   = var v
     Ne-letbox* x (app t u) = app (Ne-letbox* x t) (letbox x u)
+    Ne-letbox* x (fst t) = fst (Ne-letbox* x t)
+    Ne-letbox* x (snd t) = snd (Ne-letbox* x t)
  
   Ne : Ty → Psh
   Ne A = record { iSet = _;_⊢Ne A
@@ -77,8 +79,8 @@ module IK.NbE.DC where
   infix 19 _x_
   _x_ : Psh → Psh → Psh
   P x Q  = record { iSet = λ Δ Γ → (P .iSet Δ Γ) × ((Q .iSet Δ Γ))
-                  ; Wken = λ {Δ₁⊆Δ₂ Γ₁⊆Γ₂ (fst , snd)→ (P .Wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ fst) , (Q .Wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ snd) }
-                  ; letbox* = λ n (fst , snd) → (P .letbox* n fst) , (Q .letbox* n snd)}
+                  ; Wken = λ {Δ₁⊆Δ₂ Γ₁⊆Γ₂ (π₁ , π₂) → (P .Wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ π₁) , (Q .Wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ π₂) }
+                  ; letbox* = λ n (π₁ , π₂) → (P .letbox* n π₁) , (Q .letbox* n π₂)}
 
   Hom : Psh → Psh → Set
   Hom P Q = P →̇ Q
@@ -93,11 +95,11 @@ module IK.NbE.DC where
   ! : Hom P 𝟙
   ! .iFun _ = tt
 
-  fst : Hom (P x Q) P
-  fst .iFun (p , q) = p
+  π₁ : Hom (P x Q) P
+  π₁ .iFun (p , q) = p
 
-  snd : Hom (P x Q) Q
-  snd .iFun (p , q) = q
+  π₂ : Hom (P x Q) Q
+  π₂ .iFun (p , q) = q
 
   pr : Hom O P → Hom O Q → Hom O (P x Q)
   pr p q .iFun o = p .iFun o , q .iFun o
@@ -128,12 +130,12 @@ module IK.NbE.DC where
   ev .iFun (n , m) = n ⊆-refl ⊆-refl m
 
   open import IK.Semantics.KripkeCat.Model
-  open ProductCat Psh Hom 𝟙 _x_ _∘_ fst snd pr
+  open ProductCat Psh Hom 𝟙 _x_ _∘_ π₁ π₂ pr
 
   postulate
-    □-pr-left-unit  : ∀ {P}     → □-map x-left-unit   ∘ □-pr □-! snd                   ≡ x-left-unit  {□ P}
-    □-pr-right-unit : ∀ {P}     → □-map x-right-unit  ∘ □-pr fst □-!                   ≡ x-right-unit {□ P}
-    □-pr-assoc      : ∀ {O P Q} → □-map x-right-assoc ∘ □-pr (□-pr fst snd ∘ fst) snd  ≡ □-pr fst (□-pr fst snd ∘ snd) ∘ x-right-assoc {□ O} {□ P} {□ Q}
+    □-pr-left-unit  : ∀ {P}     → □-map x-left-unit   ∘ □-pr □-! π₂                   ≡ x-left-unit  {□ P}
+    □-pr-right-unit : ∀ {P}     → □-map x-right-unit  ∘ □-pr π₁ □-!                   ≡ x-right-unit {□ P}
+    □-pr-assoc      : ∀ {O P Q} → □-map x-right-assoc ∘ □-pr (□-pr π₁ π₂ ∘ π₁) π₂  ≡ □-pr π₁ (□-pr π₁ π₂ ∘ π₂) ∘ x-right-assoc {□ O} {□ P} {□ Q}
 
   NbEModel : KripkeCat
   NbEModel = record
@@ -148,8 +150,8 @@ module IK.NbE.DC where
                ; □-map           = □-map
                ; □-pr            = □-pr
                ; □-!             = □-!
-               ; fst             = fst
-               ; snd             = snd
+               ; π₁             = π₁
+               ; π₂             = π₂
                ; pr              = pr
                ; !               = !
                ; abs             = abs
@@ -167,9 +169,11 @@ module IK.NbE.DC where
   reflect {𝕓} .iFun n = up n
   reflect {a ⇒ b} .iFun n = λ Δ₁⊆Δ₂ Γ₁⊆Γ₂ x → reflect .iFun (app (wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ n) (reify .iFun x))
   reflect {◻ a} .iFun n = letbox n (box (reflect {a = a} .iFun (var here)))
+  reflect {a ∧ b} .iFun n = reflect .iFun (fst n) , reflect .iFun (snd n)
 
   reify {a = 𝕓} .iFun x = x
   reify {a = a ⇒ b} .iFun x = lam (reify .iFun (x ⊆-refl ⊆-`, (reflect {a = a} .iFun (var here))))
+  reify {a = a ∧ b} .iFun x = prd (reify .iFun (proj₁ x )) ((reify .iFun (proj₂ x )))
   reify {a = ◻ a} .iFun (box x) = box (reify .iFun x)
   reify {a = ◻ a} .iFun (letbox n k) = Nf _ .letbox* n (reify .iFun k)
 
@@ -180,7 +184,7 @@ module IK.NbE.DC where
 
   idM : ⟦ Δ ⟧MCtx .iSet Δ Γ
   idM {[]} {Γ} = box tt
-  idM {Δ `, a} {Γ} =  □-pr {O = ⟦ Δ ⟧MCtx x □ ⟦ a ⟧Ty} fst snd .iFun ((⟦ Δ ⟧MCtx .Wken ⊆-`, ⊆-refl idM) , box (reflect {a} .iFun (var here)))
+  idM {Δ `, a} {Γ} =  □-pr {O = ⟦ Δ ⟧MCtx x □ ⟦ a ⟧Ty} π₁ π₂ .iFun ((⟦ Δ ⟧MCtx .Wken ⊆-`, ⊆-refl idM) , box (reflect {a} .iFun (var here)))
 
   idₛ' : (⟦ Δ ⟧MCtx x ⟦ Γ ⟧Ctx) .iSet Δ Γ
   idₛ' {Δ} {Γ} = idM , (idN {Γ = Γ})
@@ -192,9 +196,6 @@ module IK.NbE.DC where
   -- normalization function
   norm : Δ ; Γ ⊢ a → Δ ; Γ ⊢Nf a
   norm t = quot (⟦ t ⟧Tm)
-
-  -- ex : [] ; [] ⊢Nf (𝕓 ⇒ 𝕓)
-  -- ex = norm (app (letbox (box (lam {A = 𝕓} (var here))) (lam (lam (var here)))) (lam {A = 𝕓} (var here)))
 
   -----------------------
   -- Logical Relations --
@@ -210,11 +211,11 @@ module IK.NbE.DC where
 
   open import Relation.Binary.PropositionalEquality
 
-  RTm : {a : Ty} {Δ Γ : Ctx} → Δ ; Γ ⊢ a → ⟦ Δ ; Γ ⊢ a ⟧  → Set
-  RTm {𝕓} t x = t ≈ Nf⇒Tm (quot x)
-  RTm {a ⇒ b} {Δ} {Γ} t f =
-    {Δ' Γ' : Ctx} {u : Δ' ; Γ' ⊢ a} {x : Hom (⟦ Δ' ⟧MCtx x ⟦ Γ' ⟧Ctx) ⟦ a ⟧Ty}
-     → (Δ⊆Δ' : Δ ⊆ Δ') → (Γ⊆Γ' : Γ ⊆ Γ')
-     → RTm u x → RTm (app (wken Δ⊆Δ' Γ⊆Γ' t) u) (ev ∘ pr (wken-sem {a = a ⇒ b}  Δ⊆Δ' Γ⊆Γ' f) x)
-  RTm {◻ a} t x = {!!}
-  -- ∃ λ u → Rt u x × t ⟶* box u
+  -- RTm : {a : Ty} {Δ Γ : Ctx} → Δ ; Γ ⊢ a → ⟦ Δ ; Γ ⊢ a ⟧  → Set
+  -- RTm {𝕓} t x = t ≈ Nf⇒Tm (quot x)
+  -- RTm {a ⇒ b} {Δ} {Γ} t f =
+  --   {Δ' Γ' : Ctx} {u : Δ' ; Γ' ⊢ a} {x : Hom (⟦ Δ' ⟧MCtx x ⟦ Γ' ⟧Ctx) ⟦ a ⟧Ty}
+  --    → (Δ⊆Δ' : Δ ⊆ Δ') → (Γ⊆Γ' : Γ ⊆ Γ')
+  --    → RTm u x → RTm (app (wken Δ⊆Δ' Γ⊆Γ' t) u) (ev ∘ pr (wken-sem {a = a ⇒ b}  Δ⊆Δ' Γ⊆Γ' f) x)
+  -- RTm {◻ a} t x = {!!}
+  -- -- ∃ λ u → Rt u x × t ⟶* box u

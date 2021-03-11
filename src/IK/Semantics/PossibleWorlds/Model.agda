@@ -71,23 +71,23 @@ _x_ : Obj → Obj → Obj
 ((P , r) x (Q , s)) .S          w            = P w × Q w
 ((P , r) x (Q , s)) .isMonotone w≤w' (p , q) = r w≤w' p , s w≤w' q
 
-fst : Hom (P x Q) P
-fst .f (p , q) = p
+π₁ : Hom (P x Q) P
+π₁ .f (p , q) = p
 
-snd : Hom (P x Q) Q
-snd .f (p , q) = q
+π₂ : Hom (P x Q) Q
+π₂ .f (p , q) = q
 
 pr : Hom O P → Hom O Q → Hom O (P x Q)
 pr p q .f o = p .f o , q .f o
 
 _x-map_ : Hom P P' → Hom Q Q' → Hom (P x Q) (P' x Q')
-n x-map m = pr (n ∘ fst) (m ∘ snd)
+n x-map m = pr (n ∘ π₁) (m ∘ π₂)
 
 x-left-assoc : Hom (O x (P x Q)) ((O x P) x Q)
-x-left-assoc = pr (pr fst (fst ∘ snd)) (snd ∘ snd)
+x-left-assoc = pr (pr π₁ (π₁ ∘ π₂)) (π₂ ∘ π₂)
 
 x-right-assoc : Hom ((O x P) x Q) (O x (P x Q))
-x-right-assoc = pr  (fst ∘ fst) (pr (snd ∘ fst) snd)
+x-right-assoc = pr  (π₁ ∘ π₁) (pr (π₂ ∘ π₁) π₂)
 
 x-left-unit : Hom P (T x P)
 x-left-unit = pr ! id
