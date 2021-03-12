@@ -52,6 +52,7 @@ neBetaShort (unbox (unbox n e) _)  (exp-box , p)      = p
 
 nfBetaShort (up𝕓 x)                (r , p)            = neBetaShort x (r , p)
 nfBetaShort (lam n)                (cong-lam r , p)   = nfBetaShort n (r , p)
+nfBetaShort (up∧ x)                (r , p)            = neBetaShort x (r , p)
 nfBetaShort (box n)                (cong-box r , p)   = nfBetaShort n (r , p)
 
 -- defines an eta-expansion relation (_⟶η_)
@@ -79,6 +80,7 @@ EtaLong {Γ} {a} t = {t' : Tm Γ a} → ¬ Σ (t ⟶ t') (EtaRule t)
 
 -- Note: not all neutrals are eta-long, only ones of base type
 neEtaLong : (n : Ne Γ 𝕓) → EtaLong (embNe n)
+neEtaLong∧ : (n : Ne Γ (a ∧ b)) → EtaLong (embNe n) -- XXX
 nfEtaLong : (n : Nf Γ a) → EtaLong (embNf n)
 
 neEtaLong (app (var _) m)       (cong-app2 r , p)  = nfEtaLong m (r , p)
@@ -88,9 +90,17 @@ neEtaLong (unbox (var _) _)     (cong-unbox r , p) = p
 neEtaLong (unbox (app _ _) _)   (cong-unbox r , p) = p
 neEtaLong (unbox (unbox _ _) _) (cong-unbox r , p) = p
 
+neEtaLong∧ (app (var _) m)       (cong-app2 r , p)  = nfEtaLong m (r , p)
+neEtaLong∧ (app (app _ _) m)     (cong-app2 r , p)  = nfEtaLong m (r , p)
+neEtaLong∧ (app (unbox _ _) m)   (cong-app2 r , p)  = nfEtaLong m (r , p)
+neEtaLong∧ (unbox (var _) _)     (cong-unbox r , p) = p
+neEtaLong∧ (unbox (app _ _) _)   (cong-unbox r , p) = p
+neEtaLong∧ (unbox (unbox _ _) _) (cong-unbox r , p) = p
+
 nfEtaLong (up𝕓 x) (r , p)          = neEtaLong x (r , p)
 nfEtaLong (lam _) (exp-fun , p)    = p
 nfEtaLong (lam n) (cong-lam r , p) = nfEtaLong n (r , p)
+nfEtaLong (up∧ x) (r , p)          = neEtaLong∧ x (r , p)
 nfEtaLong (box _) (exp-box , p)    = p
 nfEtaLong (box n) (cong-box r , p) = nfEtaLong n (r , p)
 

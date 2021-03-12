@@ -20,6 +20,7 @@ data Ne where
 data Nf where
   up𝕓 : Ne Γ 𝕓 → Nf Γ 𝕓
   lam : Nf (Γ `, a) b → Nf Γ (a ⇒ b)
+  up∧ : Ne Γ (a ∧ b) → Nf Γ (a ∧ b) -- XXX
   box : Nf (Γ 🔒) a → Nf Γ (◻ a)
 
 
@@ -34,6 +35,7 @@ embNe (unbox n x) = unbox (embNe n) x
 
 embNf (up𝕓 x) = embNe x
 embNf (lam n) = lam (embNf n)
+embNf (up∧ x) = embNe x
 embNf (box n) = box (embNf n)
 
 -- weakening lemmas
@@ -47,6 +49,7 @@ wkNe w (unbox n e)  = unbox (wkNe (stashWk e w) n) (resExt e w)
 
 wkNf e (up𝕓 x) = up𝕓 (wkNe e x)
 wkNf e (lam n) = lam (wkNf (keep e) n)
+wkNf e (up∧ x) = up∧ (wkNe e x)
 wkNf e (box n) = box (wkNf (keep🔒 e) n)
 
 
@@ -72,6 +75,7 @@ data Lock (A : Ctx → Set) : Ctx → Set where
 Tm' : Ctx → Ty → Set
 Tm' Γ 𝕓       = Nf Γ 𝕓
 Tm' Γ (a ⇒ b) = {Γ' : Ctx} → Γ' ≤ Γ → (Tm' Γ' a → Tm' Γ' b)
+Tm' Γ (a ∧ b) = Nf Γ (a ∧ b) -- Tm' Γ a × Tm' Γ b
 Tm' Γ (◻ a)   = Box (λ Γ' → Tm' Γ' a) Γ
 
 -- interpretation of contexts
@@ -84,6 +88,7 @@ Sub' Δ (Γ 🔒)    = Lock (λ Γ' → Sub' Γ' Γ) Δ
 wkTm' : Γ' ≤ Γ → Tm' Γ a → Tm' Γ' a
 wkTm' {a = 𝕓}     e n       = wkNf e n
 wkTm' {a = a ⇒ b} e f       = λ e' y → f (e ∙ e') y
+wkTm' {a = a ∧ b} e n       = wkNf e n -- wkTm' e x , wkTm' e y
 wkTm' {a = ◻ a}   e (box x) = box (wkTm' (keep🔒 e) x)
 
 -- substitutions in the model can be weakened
@@ -116,11 +121,13 @@ reflect : Ne Γ a  → Tm' Γ a
 -- interpretation of neutrals
 reflect {a = 𝕓} n     = up𝕓 n
 reflect {a = a ⇒ b} n = λ e x → reflect (app (wkNe e n) (reify x))
+reflect {a = a ∧ b} n = up∧ n
 reflect {a = ◻ a} n   = box (reflect (unbox n nil))
 
 -- reify values to normal forms
 reify {a = 𝕓}     x       = x
 reify {a = a ⇒ b} x       = lam (reify (x (drop idWk) (reflect (var ze))))
+reify {a = a ∧ b} x       = x
 reify {a = ◻ a}   (box x) = box (reify x)
 
 -- identity substitution

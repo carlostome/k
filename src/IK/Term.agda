@@ -8,6 +8,9 @@ module IK.Term where
 open import IK.Type public
 open import Context (Ty) public
 
+variable
+  Γ Γ' ΓL ΓR Δ Δ' : Ctx
+
 ------------------------------------
 -- Variables, terms and substituions
 ------------------------------------

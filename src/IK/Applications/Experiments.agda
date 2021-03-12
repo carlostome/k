@@ -55,6 +55,7 @@ strenNe (keep r)   (unbox n (ext x)) = wkNe fresh (strenNe r (unbox n x))
 
 strenNf r (up𝕓 x) = up𝕓 (strenNe r x)
 strenNf r (lam n) = lam (strenNf (keep r) n)
+strenNf r (up∧ x) = up∧ (strenNe r x)
 strenNf r (box n) = box (strenNf (keep🔒 r) n)
 
 -- NOTE:

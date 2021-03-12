@@ -5,10 +5,6 @@ open import Relation.Binary.PropositionalEquality
 
 open _≡_
 
-private
-  variable
-    a b c d : Ty
-
 infixl 4 _🔒
 infix  3 _≤_
 infix  3 _,,_
@@ -23,14 +19,16 @@ open import Data.Product  using (Σ ; _×_ ; _,_ ; ∃ ; ∃₂)
 
 data Ctx : Set where
   []   : Ctx
-  _`,_ : Ctx → Ty → Ctx
-  _🔒   : Ctx → Ctx
+  _`,_ : (Γ : Ctx) → (a : Ty) → Ctx
+  _🔒   : (Γ : Ctx) → Ctx
+
+private
+  variable
+    Γ Γ' ΓL ΓR Δ Δ' : Ctx
+    a b c d : Ty
 
 [🔒] : Ctx
 [🔒] = [] 🔒
-
-variable
-  Γ Δ Γ' Δ' ΓL ΓR : Ctx
 
 -- append contexts (++)
 _,,_ : Ctx → Ctx → Ctx

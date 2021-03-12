@@ -2,22 +2,11 @@ module IK.Calculus.DC where
 
   open import Relation.Binary hiding (_⇒_)
 
-  infix  20 ◻_
-  infixr 19 _∧_
-  infixr 19 _⇒_
-  
-  data Ty : Set where
-    𝕓   : Ty
-    _∧_ : Ty → Ty → Ty
-    _⇒_ : Ty → Ty → Ty
-    ◻_  : Ty → Ty
-  
-  variable
-      a b c d : Ty
+  open import IK.Type public
 
   data Ctx : Set where
     []   : Ctx
-    _`,_ : Ctx → Ty → Ctx
+    _`,_ : (Γ : Ctx) → (a : Ty) → Ctx
 
   private
     variable

@@ -85,11 +85,11 @@ Nf a .isMonotone Γ≤Δ x = Norm.wkNf Γ≤Δ x
 -- interpretation of types
 
 Tm'- : Ty → Obj
-Tm'- a = ⟦_⟧Ty (Nf 𝕓) a
+Tm'- a = ⟦_⟧Ty (Nf 𝕓) (λ a b → Nf (a ∧ b)) a
 
 -- interpretation of contexts
 Sub'- : Ctx → Obj
-Sub'- Γ = ⟦_⟧Ctx (Nf 𝕓) Γ
+Sub'- Γ = ⟦_⟧Ctx (Nf 𝕓) (λ a b → Nf (a ∧ b)) Γ
 
 reify   : Hom (Tm'- a) (Nf a)
 reflect : Hom (Ne a) (Tm'- a)
@@ -97,11 +97,13 @@ reflect : Hom (Ne a) (Tm'- a)
 -- interpretation of neutrals
 reflect {a = 𝕓}     .f n = up𝕓 n
 reflect {a = a ⇒ b} .f n = λ e x → reflect .f (app (Ne (a ⇒ b) .isMonotone e n) (reify .f x))
+reflect {a = a ∧ b} .f n = up∧ n
 reflect {a = ◻ a}   .f n = λ wRw' → reflect .f (unbox n (wRw' .proj₂))
 
 -- reify values to normal forms
 reify {a = 𝕓}     .f x = x
 reify {a = a ⇒ b} .f x = lam (reify .f (x (drop T-refl) (reflect {a} .f (var ze))))
+reify {a = a ∧ b} .f x = x
 reify {a = ◻ a}   .f x = box (reify .f (x drop🔒))
 
 -- identity substitution (this is special about the NbE model)
@@ -112,7 +114,7 @@ idₛ' {Γ 🔒}   = Γ , (drop🔒 , idₛ' {Γ})
 
 -- interpretation of terms
 eval : Tm Γ a → Hom (Sub'- Γ) (Tm'- a)
-eval t = ⟦_⟧Tm (Nf 𝕓) t
+eval t = ⟦_⟧Tm (Nf 𝕓) (λ a b → Nf (a ∧ b)) t
 
 -- retraction of interpretation
 quot : Hom (Sub'- Γ) (Tm'- a) → Norm.Nf Γ a

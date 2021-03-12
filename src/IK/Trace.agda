@@ -24,6 +24,8 @@ Rt {𝕓}         t x =
 Rt {a ⇒ b} {Γ} t f =
   {Γ' : Ctx} {u : Tm Γ' a} {x : Tm' Γ' a}
     → (e : Γ' ≤ Γ) → Rt u x → Rt (app (wkTm e t) u) (f e x)
+Rt {a ∧ b}     t x =
+  t ⟶* quotTm x
 Rt {◻ a}       t (box x) =
   ∃ λ u → Rt u x × t ⟶* box u
 
@@ -52,6 +54,8 @@ Rt-prepend {a = 𝕓} r uRx
   = multi r uRx
 Rt-prepend {a = a ⇒ b} r uRx
   = λ w uRy → Rt-prepend (cong-app* (invRed* w r) (zero refl)) (uRx w uRy)
+Rt-prepend {a = a ∧ b} r uRx
+  = multi r uRx
 Rt-prepend {a = ◻ a} {t = t} {u} {x = box x} r (t' , t'Rx , r')
   = t' , t'Rx , multi r r'
 
@@ -73,6 +77,8 @@ Rt-build {a = 𝕓}                 r
   = r
 Rt-build {a = a ⇒ b}             tRx
   = multi (one exp-fun) (cong-lam* (Rt-build (tRx _ (Rt-reflect (var ze)))))
+Rt-build {a = a ∧ b}             r
+  = r
 Rt-build {a = ◻ a}   {x = box x} (u , uR- , r)
   = multi r (cong-box* (Rt-build uR-))
 
@@ -80,6 +86,8 @@ Rt-reflect {a = 𝕓}     n
   = zero refl
 Rt-reflect {a = a ⇒ b} n
   = λ e y → Rt-prepend (cong-app* (zero (nat-embNe _ _)) (Rt-build y)) (Rt-reflect _ )
+Rt-reflect {a = a ∧ b} n
+  = zero refl
 Rt-reflect {a = ◻ a}   n
   = unbox (embNe n) nil , Rt-reflect (unbox n nil) , one exp-box
 
@@ -92,6 +100,8 @@ invRt {a = 𝕓}  {x = x}       w tRx =
   multi (invRed* _ tRx) (zero (nat-embNf _ (reify x)))
 invRt {a = a ⇒ b}            w tRx =
   λ w' y → Rt-cast (cong₂ app (wkTmPres∙ _ _ _) refl) (tRx (w ∙ w') y)
+invRt {a = a ∧ b}  {x = x}   w tRx =
+  multi (invRed* _ tRx) (zero (nat-embNf _ (reify x)))
 invRt {a = ◻ a} {x = box x}  e (u , uRx , r) =
   wkTm (keep🔒 e) u , invRt (keep🔒 e) uRx , invRed* e r
 

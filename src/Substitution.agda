@@ -13,6 +13,7 @@ open import Context (Ty)
 
 private
   variable
+    Γ Γ' ΓL ΓR Δ Δ' : Ctx
     a b c d : Ty
 
 ----------------

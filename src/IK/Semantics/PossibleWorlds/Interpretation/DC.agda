@@ -23,8 +23,8 @@ module _ (⟦𝕓⟧ : Obj) where
   ⟦_⟧Ty : Ty → Obj
   ⟦ 𝕓 ⟧Ty =  ⟦𝕓⟧
   ⟦ a ⇒ b ⟧Ty = ⟦ b ⟧Ty ^ ⟦ a ⟧Ty
-  ⟦ ◻ a ⟧Ty = □ ⟦ a ⟧Ty
   ⟦ a ∧ b ⟧Ty = ⟦ a ⟧Ty x ⟦ b ⟧Ty
+  ⟦ ◻ a ⟧Ty = □ ⟦ a ⟧Ty
 
   ⟦_⟧Ctx : Ctx → Obj
   ⟦ []     ⟧Ctx = T

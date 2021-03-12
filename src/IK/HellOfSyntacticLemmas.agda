@@ -46,6 +46,7 @@ wkNePresId (unbox n e) with ←🔒IsPre🔒 e | 🔒→isPost🔒 e
 
 wkNfPresId (up𝕓 n) = cong up𝕓 (wkNePresId n)
 wkNfPresId (lam n) = cong lam (wkNfPresId n)
+wkNfPresId (up∧ n) = cong up∧ (wkNePresId n)
 wkNfPresId (box n) = cong box (wkNfPresId n)
 
 -- weakening of terms (a functor map) preserves weakening composition
@@ -279,6 +280,7 @@ nat-embNf : (w : Γ' ≤ Γ) (n : Nf Γ a)
 
 nat-embNf w (up𝕓 x) = nat-embNe w x
 nat-embNf w (lam n) = cong lam (nat-embNf (keep w) n)
+nat-embNf w (up∧ x) = nat-embNe w x
 nat-embNf w (box n) = cong box (nat-embNf (keep🔒 w) n)
 
 nat-embNe w (var x)     = refl

@@ -16,10 +16,11 @@ module IK.Semantics.PossibleWorlds.Interpretation.Fitch
 open import IK.Term renaming (_≤_ to Wk) -- reexports IK.Type and Context Ty
 open import IK.Semantics.PossibleWorlds.Model W-Carrier R _≤_ T-preorder cod-R-monotone dom-R-monotone public
 
-module _ (⟦𝕓⟧ : Obj) where
+module _ (⟦𝕓⟧ : Obj) (⟦∧⟧ : Ty → Ty → Obj) where
   ⟦_⟧Ty : Ty → Obj
   ⟦ 𝕓     ⟧Ty = ⟦𝕓⟧
   ⟦ a ⇒ b ⟧Ty = ⟦ b ⟧Ty ^ ⟦ a ⟧Ty
+  ⟦ a ∧ b ⟧Ty = ⟦∧⟧ a b -- ⟦ b ⟧Ty x ⟦ a ⟧Ty
   ⟦ ◻ a   ⟧Ty = □ ⟦ a ⟧Ty
 
   ⟦_⟧Ctx : Ctx → Obj

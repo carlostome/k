@@ -11,7 +11,7 @@ module IK.NbE.DC where
     field
         iSet : ISet
         Wken : ∀ {Δ₁ Δ₂ Γ₁ Γ₂} → Δ₁ ⊆ Δ₂ → Γ₁ ⊆ Γ₂ → (iSet Δ₁ Γ₁  → iSet Δ₂ Γ₂)
-        letbox* : ∀ {Δ Γ} {a} → Δ ; Γ ⊢Ne (◻ a) → iSet (Δ `, a)  Γ → iSet Δ  Γ
+        -- letbox* : ∀ {Δ Γ} {a} → Δ ; Γ ⊢Ne (◻ a) → iSet (Δ `, a)  Γ → iSet Δ  Γ
 
   open Psh
 
@@ -31,7 +31,7 @@ module IK.NbE.DC where
   □_ : (P : Psh) → Psh
   □_ P = record { iSet = Box P
                   ; Wken = wkBox
-                  ; letbox* = letbox}
+                  } -- ; letbox* = letbox}
 
   record _→̇_ (P Q : Psh) : Set where
     field
@@ -42,7 +42,7 @@ module IK.NbE.DC where
   Tm : Ty → Psh
   Tm A = record { iSet = _;_⊢ A
                   ; Wken = wken
-                  ; letbox* = λ x x₁ → letbox (Nf⇒Tm (Ne⇒Nf x)) In x₁}
+                  } -- ; letbox* = λ x x₁ → letbox (Nf⇒Tm (Ne⇒Nf x)) In x₁}
 
   private
     Ne-letbox* : Δ ; Γ ⊢Ne (◻ a) → (Δ `, a) ; Γ ⊢Ne b → Δ ; Γ ⊢Ne b
@@ -54,18 +54,18 @@ module IK.NbE.DC where
   Ne : Ty → Psh
   Ne A = record { iSet = _;_⊢Ne A
                 ; Wken = wkNe
-                ; letbox* = Ne-letbox*}
+                } -- ; letbox* = Ne-letbox*}
 
   Nf : Ty → Psh
   Nf A = record { iSet = _;_⊢Nf A
                 ; Wken = wkNf
-                ; letbox* = λ x x₁ → letbox x x₁}
+                } -- ; letbox* = λ x x₁ → letbox x x₁}
 
   _⇒̇_ : Psh → Psh → Psh
   (P ⇒̇ Q) = record { iSet  = λ Δ₁ Γ₁ → ∀ {Δ₂ Γ₂} → (Δ₁⊆Δ₂ : Δ₁ ⊆ Δ₂)
                              → (Γ₁⊆Γ₂ : Γ₁ ⊆ Γ₂) → iSet P Δ₂ Γ₂ → iSet Q Δ₂ Γ₂
                     ; Wken = λ Δ₁⊆Δ₂ Γ₁⊆Γ₂ f Δ₂⊆Δ₃ Γ₂⊆Γ₃ x → f (⊆-trans Δ₁⊆Δ₂ Δ₂⊆Δ₃) (⊆-trans Γ₁⊆Γ₂ Γ₂⊆Γ₃) x
-                    ; letbox* = λ n f Δ₁⊆Δ₂ Γ₁⊆Γ₂ p → Q .letbox* (Ne _ .Wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ n) (f (keep Δ₁⊆Δ₂) Γ₁⊆Γ₂ (P .Wken ⊆-`, ⊆-refl p)) }
+                    } -- ; letbox* = λ n f Δ₁⊆Δ₂ Γ₁⊆Γ₂ p → Q .letbox* (Ne _ .Wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ n) (f (keep Δ₁⊆Δ₂) Γ₁⊆Γ₂ (P .Wken ⊆-`, ⊆-refl p)) }
   
   open import Data.Unit
 
@@ -80,7 +80,7 @@ module IK.NbE.DC where
   _x_ : Psh → Psh → Psh
   P x Q  = record { iSet = λ Δ Γ → (P .iSet Δ Γ) × ((Q .iSet Δ Γ))
                   ; Wken = λ {Δ₁⊆Δ₂ Γ₁⊆Γ₂ (π₁ , π₂) → (P .Wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ π₁) , (Q .Wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ π₂) }
-                  ; letbox* = λ n (π₁ , π₂) → (P .letbox* n π₁) , (Q .letbox* n π₂)}
+                  } -- ; letbox* = λ n (π₁ , π₂) → (P .letbox* n π₁) , (Q .letbox* n π₂)}
 
   Hom : Psh → Psh → Set
   Hom P Q = P →̇ Q
@@ -175,7 +175,7 @@ module IK.NbE.DC where
   reify {a = a ⇒ b} .iFun x = lam (reify .iFun (x ⊆-refl ⊆-`, (reflect {a = a} .iFun (var here))))
   reify {a = a ∧ b} .iFun x = prd (reify .iFun (proj₁ x )) ((reify .iFun (proj₂ x )))
   reify {a = ◻ a} .iFun (box x) = box (reify .iFun x)
-  reify {a = ◻ a} .iFun (letbox n k) = Nf _ .letbox* n (reify .iFun k)
+  reify {a = ◻ a} .iFun (letbox n k) = letbox n (reify .iFun k)
 
   -- identity substitution (this is special about the NbE model)
   idN : ⟦ Γ ⟧Ctx .iSet Δ Γ
