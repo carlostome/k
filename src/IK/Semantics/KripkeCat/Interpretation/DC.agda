@@ -3,10 +3,6 @@ module IK.Semantics.KripkeCat.Interpretation.DC (KC : KripkeCat) (let open Kripk
 
   open import IK.Calculus.DC
 
-  private
-    variable
-      Γ Δ : Ctx
-
   ⟦_⟧Ty : Ty → Obj
   ⟦ 𝕓 ⟧Ty =  ⟦𝕓⟧
   ⟦ a ⇒ b ⟧Ty = ⟦ a ⟧Ty ⇒̇ ⟦ b ⟧Ty

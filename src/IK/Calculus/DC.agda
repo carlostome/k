@@ -155,7 +155,7 @@ module IK.Calculus.DC where
      data _;_⊢Nf_ (Δ Γ : Ctx) : Ty → Set where
        lam : Δ ; (Γ `, a) ⊢Nf b → Δ ; Γ ⊢Nf (a ⇒ b)
        box : [] ; Δ ⊢Nf a → Δ ; Γ ⊢Nf (◻ a)
-       letbox : Δ ; Γ ⊢Ne (◻ a) → (Δ `, a) ; Γ ⊢Nf b → Δ ; Γ ⊢Nf b
+       letbox : Δ ; Γ ⊢Ne (◻ a) → (Δ `, a) ; Γ ⊢Nf (◻ b) → Δ ; Γ ⊢Nf (◻ b)
        up : Δ ; Γ ⊢Ne 𝕓 → Δ ; Γ ⊢Nf 𝕓
        prd : Δ ; Γ ⊢Nf a → Δ ; Γ ⊢Nf b → Δ ; Γ ⊢Nf (a ∧ b)
 
@@ -171,6 +171,20 @@ module IK.Calculus.DC where
      wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ (box t) = box (wkNf base Δ₁⊆Δ₂ t)
      wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ (up t) = up (wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ t)
      wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ (prd x t) = prd (wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ x) (wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ t)
+
+  --8<-- (for convenience)
+  mwkNf : ∀ {A} {Δ Δ'} {Γ} → Δ ⊆ Δ' → Δ ; Γ ⊢Nf A → Δ' ; Γ ⊢Nf A
+  mwkNf Δ⊆Δ' = wkNf Δ⊆Δ' ⊆-refl
+
+  lwkNf : ∀ {A} {Δ} {Γ Γ'} → Γ ⊆ Γ' → Δ ; Γ ⊢Nf A → Δ ; Γ' ⊢Nf A
+  lwkNf Γ⊆Γ' = wkNf ⊆-refl Γ⊆Γ'
+
+  mwkNe : ∀ {A} {Δ Δ'} {Γ} → Δ ⊆ Δ' → Δ ; Γ ⊢Ne A → Δ' ; Γ ⊢Ne A
+  mwkNe Δ⊆Δ' = wkNe Δ⊆Δ' ⊆-refl
+
+  lwkNe : ∀ {A} {Δ} {Γ Γ'} → Γ ⊆ Γ' → Δ ; Γ ⊢Ne A → Δ ; Γ' ⊢Ne A
+  lwkNe Γ⊆Γ' = wkNe ⊆-refl Γ⊆Γ'
+  --8>--
 
   Ne⇒Nf : ∀ {a} {Δ} {Γ}→ Δ ; Γ ⊢Ne a → Δ ; Γ ⊢Nf a
   Ne⇒Nf {𝕓} t = up t

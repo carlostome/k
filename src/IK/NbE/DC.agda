@@ -15,10 +15,6 @@ module IK.NbE.DC where
 
   open Psh
 
-  private
-    variable
-      Γ Δ : Ctx
-
   -- this seems to be a lax monoidal functor, not a product-preserving functor
   data Box (P : Psh) (Δ Γ : Ctx) : Set where
     box : P .iSet []  Δ → Box P Δ Γ
@@ -45,11 +41,19 @@ module IK.NbE.DC where
                   } -- ; letbox* = λ x x₁ → letbox (Nf⇒Tm (Ne⇒Nf x)) In x₁}
 
   private
-    Ne-letbox* : Δ ; Γ ⊢Ne (◻ a) → (Δ `, a) ; Γ ⊢Ne b → Δ ; Γ ⊢Ne b
-    Ne-letbox* x (var v)   = var v
-    Ne-letbox* x (app t u) = app (Ne-letbox* x t) (letbox x u)
-    Ne-letbox* x (fst t) = fst (Ne-letbox* x t)
-    Ne-letbox* x (snd t) = snd (Ne-letbox* x t)
+    mutual
+      Nf-letbox* : Δ ; Γ ⊢Ne (◻ a) → (Δ `, a) ; Γ ⊢Nf b → Δ ; Γ ⊢Nf b
+      Nf-letbox* x (lam t) = lam (Nf-letbox* (lwkNe ⊆-`, x) t)
+      Nf-letbox* x (up x₁) = up (Ne-letbox* x x₁)
+      Nf-letbox* x (prd t t₁) = prd (Nf-letbox* x t) (Nf-letbox* x t₁)
+      Nf-letbox* x t@(box _) = letbox x t
+      Nf-letbox* x t@(letbox _ _) = letbox x t
+
+      Ne-letbox* : Δ ; Γ ⊢Ne (◻ a) → (Δ `, a) ; Γ ⊢Ne b → Δ ; Γ ⊢Ne b
+      Ne-letbox* x (var v)   = var v
+      Ne-letbox* x (app t u) = app (Ne-letbox* x t) (Nf-letbox* x u)
+      Ne-letbox* x (fst t) = fst (Ne-letbox* x t)
+      Ne-letbox* x (snd t) = snd (Ne-letbox* x t)
  
   Ne : Ty → Psh
   Ne A = record { iSet = _;_⊢Ne A

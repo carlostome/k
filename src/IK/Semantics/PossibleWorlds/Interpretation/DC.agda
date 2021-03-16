@@ -15,10 +15,6 @@ module IK.Semantics.PossibleWorlds.Interpretation.DC
 open import IK.Calculus.DC
 open import IK.Semantics.PossibleWorlds.Model W-Carrier R _≤_ T-preorder cod-R-monotone dom-R-monotone public
 
-private
-  variable
-    Γ Δ : Ctx
-
 module _ (⟦𝕓⟧ : Obj) where
   ⟦_⟧Ty : Ty → Obj
   ⟦ 𝕓 ⟧Ty =  ⟦𝕓⟧
