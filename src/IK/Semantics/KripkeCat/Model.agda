@@ -24,6 +24,12 @@ module IK.Semantics.KripkeCat.Model where
     x-right-unit : ∀ {P} → Hom (P x 𝟙) P
     x-right-unit = π₁
 
+    open import Data.List.Snoc
+
+    fp : Listˢ Obj → Obj
+    fp [] = 𝟙
+    fp (ps ∷ˢ p) = fp ps x p
+
   record KripkeCat : Set₂ where -- OBS: locally small, lax
     field
       Obj   : Set₁

@@ -165,37 +165,53 @@ module IK.NbE.DC where
                ; □-pr-assoc      = □-pr-assoc
                }
 
+  Nes : Ctx → Psh
+  Nes [] = 𝟙
+  Nes (Γ `, a) = Nes Γ x Ne a
+
+  Nfs : Ctx → Psh
+  Nfs [] = 𝟙
+  Nfs (Γ `, a) = Nfs Γ x Nf a
+
   open import IK.Semantics.KripkeCat.Interpretation.DC NbEModel (Nf 𝕓)
 
-  reflect : ∀ {a} → Ne a →̇ ⟦ a ⟧Ty
-  reify : ∀ {a} → ⟦ a ⟧Ty →̇ Nf a
+  reflect : ∀ a → Ne a →̇ ⟦ a ⟧Ty
+  reify : ∀ a → ⟦ a ⟧Ty →̇ Nf a
 
-  reflect {𝕓} .iFun n = up n
-  reflect {a ⇒ b} .iFun n = λ Δ₁⊆Δ₂ Γ₁⊆Γ₂ x → reflect .iFun (app (wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ n) (reify .iFun x))
-  reflect {◻ a} .iFun n = letbox n (box (reflect {a = a} .iFun (var here)))
-  reflect {a ∧ b} .iFun n = reflect .iFun (fst n) , reflect .iFun (snd n)
+  reflect (𝕓) .iFun n = up n
+  reflect (a ⇒ b) .iFun n = λ Δ₁⊆Δ₂ Γ₁⊆Γ₂ x → reflect b .iFun (app (wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ n) (reify a .iFun x))
+  reflect (◻ a) .iFun n = letbox n (box (reflect a .iFun (var here)))
+  reflect (a ∧ b) .iFun n = reflect a .iFun (fst n) , reflect b .iFun (snd n)
 
-  reify {a = 𝕓} .iFun x = x
-  reify {a = a ⇒ b} .iFun x = lam (reify .iFun (x ⊆-refl ⊆-`, (reflect {a = a} .iFun (var here))))
-  reify {a = a ∧ b} .iFun x = prd (reify .iFun (proj₁ x )) ((reify .iFun (proj₂ x )))
-  reify {a = ◻ a} .iFun (box x) = box (reify .iFun x)
-  reify {a = ◻ a} .iFun (letbox n k) = letbox n (reify .iFun k)
+  reify (𝕓) .iFun x = x
+  reify (a ⇒ b) .iFun x = lam (reify b .iFun (x ⊆-refl ⊆-`, (reflect a .iFun (var here))))
+  reify (a ∧ b) .iFun x = prd (reify a .iFun (proj₁ x )) ((reify b .iFun (proj₂ x )))
+  reify (◻ a) .iFun (box x) = box (reify a .iFun x)
+  reify (◻ a) .iFun (letbox n k) = letbox n (reify (◻ a) .iFun k)
+
+  reflects : ∀ Γ → Nes Γ →̇ ⟦ Γ ⟧Ctx
+  reflects []       = !
+  reflects (Γ `, a) = (reflects Γ) x-map (reflect a)
+
+  reifys : ∀ Γ → ⟦ Γ ⟧Ctx →̇ Nfs Γ
+  reifys []       = !
+  reifys (Γ `, a) = (reifys Γ) x-map (reify a)
 
   -- identity substitution (this is special about the NbE model)
   idN : ⟦ Γ ⟧Ctx .iSet Δ Γ
   idN {[]} {Δ} = tt
-  idN {Γ `, x} {Δ} =  ⟦ Γ ⟧Ctx .Wken ⊆-refl ⊆-`, (idN {Γ}) , (reflect {x} .iFun (var here))
+  idN {Γ `, a} {Δ} =  ⟦ Γ ⟧Ctx .Wken ⊆-refl ⊆-`, (idN {Γ}) , (reflect a .iFun (var here))
 
   idM : ⟦ Δ ⟧MCtx .iSet Δ Γ
   idM {[]} {Γ} = box tt
-  idM {Δ `, a} {Γ} =  □-pr {O = ⟦ Δ ⟧MCtx x □ ⟦ a ⟧Ty} π₁ π₂ .iFun ((⟦ Δ ⟧MCtx .Wken ⊆-`, ⊆-refl idM) , box (reflect {a} .iFun (var here)))
+  idM {Δ `, a} {Γ} =  □-pr {O = ⟦ Δ ⟧MCtx x □ ⟦ a ⟧Ty} π₁ π₂ .iFun ((⟦ Δ ⟧MCtx .Wken ⊆-`, ⊆-refl idM) , box (reflect a .iFun (var here)))
 
   idₛ' : (⟦ Δ ⟧MCtx x ⟦ Γ ⟧Ctx) .iSet Δ Γ
   idₛ' {Δ} {Γ} = idM , (idN {Γ = Γ})
   
   -- retraction of interpretation
   quot : ⟦ Δ ; Γ ⊢ a ⟧ → Δ ; Γ ⊢Nf a
-  quot {Γ} n = reify .iFun (n .iFun idₛ')
+  quot {Γ} n = reify _ .iFun (n .iFun idₛ')
   
   -- normalization function
   norm : Δ ; Γ ⊢ a → Δ ; Γ ⊢Nf a
