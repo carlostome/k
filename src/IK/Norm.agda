@@ -23,7 +23,6 @@ data Nf where
   up∧ : Ne Γ (a ∧ b) → Nf Γ (a ∧ b) -- XXX
   box : Nf (Γ 🔒) a → Nf Γ (◻ a)
 
-
 -- embedding into terms
 
 embNe : Ne Γ a → Tm Γ a
@@ -97,7 +96,6 @@ wkSub' {Δ = []}     w tt          = tt
 wkSub' {Δ = Δ `, a} w (s , x)     = wkSub' w s , wkTm' w x
 wkSub' {Δ = Δ 🔒}    w (lock s e)  = lock (wkSub' (stashWk e w) s) (resExt e w)
 
-
 -- semantic counterpart of `unbox` from `Tm`
 unbox' : Box (λ Δ → Tm' Δ a) ΓL → LFExt Γ (ΓL 🔒) ΓR → Tm' Γ a
 unbox' (box x) e = wkTm' (wᵣ e) x
@@ -130,6 +128,7 @@ reify {a = a ⇒ b} x       = lam (reify (x (drop idWk) (reflect (var ze))))
 reify {a = a ∧ b} x       = x
 reify {a = ◻ a}   (box x) = box (reify x)
 
+
 -- identity substitution
 idₛ' : Sub' Γ Γ
 idₛ' {[]}     = tt
@@ -150,11 +149,6 @@ eval (box t)           s           = box (eval t (lock s nil))
 eval (unbox t nil)     (lock s e') = unbox' (eval t s) e'
 eval (unbox t (ext e)) (s , _)     = eval (unbox t e) s
 
-evalₛ : Sub- Γ  →̇ Sub'- Γ
-evalₛ []       = tt
-evalₛ (s `, t) = (evalₛ s) , eval t idₛ'
-evalₛ (lock s x) = lock (evalₛ s) x
-
 -- retraction of interpretation
 quot : (Sub'- Γ →̇ Tm'- a) → Nf Γ a
 quot f = reify (f idₛ')
@@ -162,3 +156,41 @@ quot f = reify (f idₛ')
 -- normalization function
 norm : Tm Γ a → Nf Γ a
 norm t = quot (eval t)
+
+
+----------------------------------
+-- Normalization for substitutions
+----------------------------------
+
+-- (simply "do everything pointwise")
+
+-- normal forms of substitutions
+data Nfₛ : Ctx → Ctx → Set where
+  []   : Nfₛ Γ []
+  _`,_ : Nfₛ Γ Δ → Nf Γ a → Nfₛ Γ (Δ `, a)
+  lock : Nfₛ ΔL Γ → LFExt Δ (ΔL 🔒) ΔR → Nfₛ Δ (Γ 🔒)
+
+-- embeddding of substitution normal forms back into substitutions
+embNfₛ : Nfₛ Γ Δ → Sub Γ Δ
+embNfₛ []         = []
+embNfₛ (n `, s)   = embNfₛ n `, embNf s
+embNfₛ (lock n s) = lock (embNfₛ n) s
+
+Nfₛ- : Ctx → Ctx → Set
+Nfₛ- Δ Γ = Nfₛ Γ Δ
+
+-- interpretation of substitutions
+evalₛ : Sub- Γ  →̇ Sub'- Γ
+evalₛ []         = tt
+evalₛ (s `, t)   = (evalₛ s) , eval t idₛ'
+evalₛ (lock s x) = lock (evalₛ s) x
+
+-- retraction of evalₛ
+quotₛ : Sub'- Γ →̇ Nfₛ- Γ
+quotₛ {[]}     tt         = []
+quotₛ {Γ `, _} (s , x)    = (quotₛ s) `, (reify x)
+quotₛ {Γ 🔒}    (lock s e) = lock (quotₛ s) e
+
+-- normalization function, for substitutions
+normₛ : Sub Δ Γ → Nfₛ Δ Γ
+normₛ s = quotₛ (evalₛ s)
