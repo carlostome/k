@@ -1,28 +1,29 @@
 module IK.Calculus.DC where
 
   open import Relation.Binary hiding (_⇒_)
-
+  open import Data.List as List using ([]; _∷_; List; _++_) public
   open import IK.Type public
 
-  data Ctx : Set where
-    []   : Ctx
-    _`,_ : (Γ : Ctx) → (a : Ty) → Ctx
+  infixl 20 _,_
+  infixl 18 _`,_
+  infixl 18 _`,,_
+  infix  4 _∈_
+  infix  4 _⊆_
+  infix  3  _;_⊢_
+
+  Ctx : Set
+  Ctx = List Ty
+
+  pattern _`,_ as a = a ∷ as
+
+  _`,,_ : Ctx → Ctx → Ctx
+  Γ `,, Γ' = Γ' ++ Γ
+
 
   variable
     Δ Δ' Δ'' : Ctx
     Γ Γ' Γ'' : Ctx
     Ε Ε' Ε'' : Ctx
-
-  _++_ : Ctx → Ctx → Ctx
-  Γ ++ [] = Γ
-  Δ ++ (Γ `, A) = Δ ++ Γ `, A
-
-  infixl 20 _,_
-  infixl 20 _++_
-  infixl 18 _`,_
-  infix  17 _∈_
-  infix  17 _⊆_
-  infix  3  _;_⊢_
 
   data _⊆_ : Ctx → Ctx → Set where
     base : [] ⊆ []
@@ -57,11 +58,11 @@ module IK.Calculus.DC where
   ⊆-`, : ∀ {Γ a} → Γ ⊆ Γ `, a
   ⊆-`, = drop ⊆-refl
 
-  ⊆-++ : Γ ⊆ Γ ++ Δ
-  ⊆-++ {Δ = []}     = ⊆-refl
-  ⊆-++ {Δ = Δ `, a} = drop ⊆-++
+  ⊆-`,, : Γ ⊆ Γ `,, Δ
+  ⊆-`,, {Δ = []}     = ⊆-refl
+  ⊆-`,, {Δ = Δ `, a} = drop ⊆-`,,
 
-  ⊆-keeps : Γ ⊆ Γ' → Γ ++ Δ ⊆ Γ' ++ Δ
+  ⊆-keeps : Γ ⊆ Γ' → Γ `,, Δ ⊆ Γ' `,, Δ
   ⊆-keeps {Δ = []} Γ⊆Γ'     = Γ⊆Γ'
   ⊆-keeps {Δ = Δ `, a} Γ⊆Γ' = keep (⊆-keeps Γ⊆Γ')
   -->8--
@@ -259,7 +260,7 @@ module IK.Calculus.DC where
   sub-keep : Sub Δ Γ Γ' → Sub Δ (Γ `, a) (Γ' `, a)
   sub-keep σ = sub-trans sub-`, σ , v0
 
-  sub-keeps : Sub Δ Γ Γ' → Sub Δ (Γ ++ Ε) (Γ' ++ Ε)
+  sub-keeps : Sub Δ Γ Γ' → Sub Δ (Γ `,, Ε) (Γ' `,, Ε)
   sub-keeps {Ε = []}     σ = σ
   sub-keeps {Ε = Ε `, a} σ = sub-keep (sub-keeps σ)
   -->8--
@@ -269,8 +270,8 @@ module IK.Calculus.DC where
   subst-here u t = subst (sub-refl , u) t
   -->8--
 
-  cut : ∀ {Γ} {Δ} {A B} {Γ'} → Δ ; Γ ⊢ A  → (t : Δ ; ((Γ `, A) ++ Γ') ⊢ B)
-           → Δ ; (Γ ++ Γ') ⊢ B
+  cut : ∀ {Γ} {Δ} {A B} {Γ'} → Δ ; Γ ⊢ A  → (t : Δ ; Γ `, A `,, Γ' ⊢ B)
+           → Δ ; Γ `,, Γ' ⊢ B
   cut u t = subst (sub-keeps (sub-refl , u)) t
 
   data MSub (Δ : Ctx) : (Δ' : Ctx) → Set where -- = Sub [] Δ Δ'
@@ -318,9 +319,9 @@ module IK.Calculus.DC where
   msub-keep : MSub Δ Δ' → MSub (Δ `, a) (Δ' `, a)
   msub-keep σ = wken-msub ⊆-`, σ , v0
 
-  msub-keeps : MSub Δ Δ' → MSub (Δ ++ Ε) (Δ' ++ Ε)
+  msub-keeps : MSub Δ Δ' → MSub (Δ `,, Ε) (Δ' `,, Ε)
   msub-keeps {Ε = []} σ = σ
-  msub-keeps {Ε = Ε `, a} σ = msub-keep (msub-keeps σ)
+  msub-keeps {Ε = Ε `, a} σ =  msub-keep (msub-keeps σ)
   -- -->8--
 
   --8<-- (for convenience)
@@ -331,7 +332,7 @@ module IK.Calculus.DC where
   msubst-here u t = msubst (msub-refl , u) t
   -->8--
 
-  mcut : [] ; Δ ⊢ a  → (t : (Δ `, a) ++ Δ' ; Γ ⊢ b) → Δ ++ Δ' ; Γ ⊢ b
+  mcut : [] ; Δ ⊢ a  → (t : Δ `, a `,, Δ' ; Γ ⊢ b) → Δ `,, Δ' ; Γ ⊢ b
   mcut t u = msubst (msub-keeps (msub-refl , t)) u
 
   --8<--

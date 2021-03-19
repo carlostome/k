@@ -27,7 +27,7 @@ module IK.Calculus.DC.EquationalTheory where
            → Δ ; Γ ⊢ B ∶ app t₁ u₁ ≈ app t₂ u₂
 
     -- rules for the □ type
-    □-β : ∀ {A B} {t₁ : [] ; Δ ⊢ A} {t₂ : (Δ `, A) ; Γ ⊢ B}
+    □-β : ∀ {A B} {t₁ : [] ; Δ ⊢ A} {t₂ : Δ `, A ; Γ ⊢ B}
             →  Δ ; Γ ⊢ B ∶ (letbox (box t₁) In t₂) ≈ msubst-here t₁ t₂
 
     □-η : ∀ {A} {t : Δ ; Γ ⊢ (◻ A)}
