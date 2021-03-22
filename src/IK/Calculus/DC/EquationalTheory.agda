@@ -12,7 +12,7 @@ module IK.Calculus.DC.EquationalTheory where
 
     -- rules for ⇒
     ⇒-β : ∀ {A B} {t₁ : Δ ; (Γ `, A) ⊢ B} {t₂ : Δ ; Γ ⊢ A}
-            →  Δ ; Γ ⊢ B ∶ app (lam t₁) t₂ ≈ subst-here t₂ t₁
+            →  Δ ; Γ ⊢ B ∶ app (lam t₁) t₂ ≈ lsubst-here t₂ t₁
 
     ⇒-η : ∀ {A B} {t : Δ ; Γ ⊢ (A ⇒ B)}
            → Δ ; Γ ⊢ (A ⇒ B) ∶ t ≈ lam (app (wken ⊆-refl ⊆-`, t) (var here))

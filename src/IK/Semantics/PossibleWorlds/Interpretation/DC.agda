@@ -41,4 +41,4 @@ module _ (⟦𝕓⟧ : Obj) where
   ⟦ snd t      ⟧Tm = π₂ ∘ ⟦ t ⟧Tm
   ⟦ prd t u    ⟧Tm = pr ⟦ t ⟧Tm ⟦ u ⟧Tm
   ⟦_⟧Tm  {Δ = Δ} (box t)  = □-map ⟦ t ⟧Tm ∘ □-pr {Q = ⟦ Δ ⟧Ctx} (□-map □-! ∘ □-!) π₁
-  ⟦_⟧Tm  {Δ = Δ} (letbox_In_ {A = A} t u) = ⟦ u ⟧Tm ∘ pr (□-pr {P = ⟦ Δ ⟧Ctx} {Q = ⟦ A ⟧Ty} π₁ ⟦ t ⟧Tm) π₂
+  ⟦_⟧Tm  {Δ = Δ} (letbox_In_ {a = A} t u) = ⟦ u ⟧Tm ∘ pr (□-pr {P = ⟦ Δ ⟧Ctx} {Q = ⟦ A ⟧Ty} π₁ ⟦ t ⟧Tm) π₂

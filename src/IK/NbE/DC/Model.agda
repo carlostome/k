@@ -1,4 +1,4 @@
-module IK.NbE.DC where
+module IK.NbE.DC.Model where
 
   open import Data.Product
   open import Relation.Binary.PropositionalEquality
@@ -46,8 +46,8 @@ module IK.NbE.DC where
       Nf-letbox* x (lam t) = lam (Nf-letbox* (lwkNe ⊆-`, x) t)
       Nf-letbox* x (up x₁) = up (Ne-letbox* x x₁)
       Nf-letbox* x (prd t t₁) = prd (Nf-letbox* x t) (Nf-letbox* x t₁)
-      Nf-letbox* x t@(box _) = letbox x t
-      Nf-letbox* x t@(letbox _ _) = letbox x t
+      Nf-letbox* x t@(box _) = letbox x In t
+      Nf-letbox* x t@(letbox _ In _) = letbox x In t
 
       Ne-letbox* : Δ ; Γ ⊢Ne (◻ a) → (Δ `, a) ; Γ ⊢Ne b → Δ ; Γ ⊢Ne b
       Ne-letbox* x (var v)   = var v
@@ -166,12 +166,16 @@ module IK.NbE.DC where
                }
 
   Nes : Ctx → Psh
-  Nes [] = 𝟙
+  Nes []       = 𝟙
   Nes (Γ `, a) = Nes Γ x Ne a
 
   Nfs : Ctx → Psh
-  Nfs [] = 𝟙
+  Nfs []       = 𝟙
   Nfs (Γ `, a) = Nfs Γ x Nf a
+
+  Tms : Ctx → Psh
+  Tms []       = 𝟙
+  Tms (Γ `, a) = Tms Γ x Tm a
 
   open import IK.Semantics.KripkeCat.Interpretation.DC NbEModel (Nf 𝕓)
 
@@ -187,7 +191,7 @@ module IK.NbE.DC where
   reify (a ⇒ b) .iFun x = lam (reify b .iFun (x ⊆-refl ⊆-`, (reflect a .iFun (var here))))
   reify (a ∧ b) .iFun x = prd (reify a .iFun (proj₁ x )) ((reify b .iFun (proj₂ x )))
   reify (◻ a) .iFun (box x) = box (reify a .iFun x)
-  reify (◻ a) .iFun (letbox n k) = letbox n (reify (◻ a) .iFun k)
+  reify (◻ a) .iFun (letbox n k) = letbox n In reify (◻ a) .iFun k
 
   reflects : ∀ Γ → Nes Γ →̇ ⟦ Γ ⟧Ctx
   reflects []       = !

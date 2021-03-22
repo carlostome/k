@@ -8,7 +8,7 @@ module IK.Calculus.DC.Reduction where
   data _⟶_ : Δ ; Γ ⊢ a → Δ ; Γ ⊢ a → Set where
   
     beta-fun : {t : Δ ; (Γ `, a) ⊢ b} {u : Δ ; Γ ⊢ a}
-               → app (lam t) u ⟶ subst-here u t
+               → app (lam t) u ⟶ lsubst-here u t
   
     cong-lam : ∀ {t t' : Δ ; (Γ `, a) ⊢ b}
                 → t ⟶ t'
