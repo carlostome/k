@@ -2,13 +2,23 @@ module IK.Calculus.DC where
 
   open import Relation.Binary hiding (_⇒_)
   open import Data.List as List using ([]; _∷_; List; _++_) public
+  open import Data.List.Membership.Propositional
+    using (_∈_) public
+  open import Data.List.Relation.Unary.Any as Any
+    using (there) public
+  open import Data.List.Relation.Binary.Sublist.Propositional
+    renaming (lookup to wken-var) public
+  open import Data.List.Relation.Binary.Sublist.Propositional.Properties public
+  open import Relation.Binary.PropositionalEquality
+    using (refl)
+  open import Data.List.Relation.Unary.All as All hiding (here; there)
+    renaming (lookup to lsubst-var)
+  open import Data.List.Relation.Unary.All.Properties as All hiding (++⁺)
   open import IK.Type public
 
   infixl 20 _,_
   infixl 18 _`,_
   infixl 18 _`,,_
-  infix  4 _∈_
-  infix  4 _⊆_
   infix  3  _;_⊢_
   infix  3  _;_⊢Ne_
   infix  3  _;_⊢Nf_
@@ -21,52 +31,31 @@ module IK.Calculus.DC where
   _`,,_ : Ctx → Ctx → Ctx
   Γ `,, Γ' = Γ' ++ Γ
 
+  pattern here = Any.here refl
 
   variable
     Δ Δ' Δ'' : Ctx
     Γ Γ' Γ'' : Ctx
     Ε Ε' Ε'' : Ctx
 
-  data _⊆_ : Ctx → Ctx → Set where
-    base : [] ⊆ []
-    keep : ∀ {T Γ Δ} → Γ ⊆ Δ → Γ `, T ⊆ Δ `, T
-    drop : ∀ {T Γ Δ} → Γ ⊆ Δ → Γ      ⊆ Δ `, T
-
-  data _∈_ (A : Ty) : Ctx → Set where
-    here : ∀ {Γ} → A ∈ Γ `, A
-    there : ∀ {B Γ}  → A ∈ Γ → A ∈ Γ `, B
-
-  wken-var : ∀ {A} {Γ₁ Γ₂} → Γ₁ ⊆ Γ₂ → A ∈ Γ₁ → A ∈ Γ₂
-  wken-var {Γ₁ = []} x ()
-  wken-var {Γ₁ = Γ₁ `, a} (keep x₁) here = here
-  wken-var {Γ₁ = Γ₁ `, a} (keep x₁) (there x₂) = there (wken-var x₁ x₂)
-  wken-var {Γ₁ = Γ₁ `, a} (drop x₁) x₂ = there (wken-var x₁ x₂)
-
-  ⊆-refl : Reflexive _⊆_
-  ⊆-refl {[]} = base
-  ⊆-refl {Γ `, x} = keep ⊆-refl
-
-  ⊆-trans : Transitive _⊆_
-  ⊆-trans x base = x
-  ⊆-trans (keep x) (keep x₁) = keep (⊆-trans x x₁)
-  ⊆-trans (drop x) (keep x₁) = drop (⊆-trans x x₁)
-  ⊆-trans x (drop x₁) = drop (⊆-trans x x₁)
-
   --8<-- (for convenience)
-  ⊆-! : ∀ {Γ} → [] ⊆ Γ
-  ⊆-! {[]}     = base
-  ⊆-! {Γ `, a} = drop ⊆-!
+  keep : Γ ⊆ Γ' → Γ `, a ⊆ Γ' `, a
+  keep = refl ∷_
 
-  ⊆-`, : ∀ {Γ a} → Γ ⊆ Γ `, a
+  drop : Γ ⊆ Γ' → Γ ⊆ Γ' `, a
+  drop = _ ∷ʳ_
+
+  ⊆-! : [] ⊆ Γ
+  ⊆-! = minimum _
+
+  ⊆-`, : Γ ⊆ Γ `, a
   ⊆-`, = drop ⊆-refl
 
   ⊆-`,, : Γ ⊆ Γ `,, Δ
-  ⊆-`,, {Δ = []}     = ⊆-refl
-  ⊆-`,, {Δ = Δ `, a} = drop ⊆-`,,
+  ⊆-`,, = ++⁺ˡ _ ⊆-refl
 
   ⊆-keeps : Γ ⊆ Γ' → Γ `,, Δ ⊆ Γ' `,, Δ
-  ⊆-keeps {Δ = []}     Γ⊆Γ' = Γ⊆Γ'
-  ⊆-keeps {Δ = Δ `, a} Γ⊆Γ' = keep (⊆-keeps Γ⊆Γ')
+  ⊆-keeps Γ⊆Γ' = ++⁺ ⊆-refl Γ⊆Γ'
   -->8--
 
   data _;_⊢_ (Δ Γ : Ctx) : Ty → Set where
@@ -132,14 +121,14 @@ module IK.Calculus.DC where
   -->8--
 
   wken : ∀ {A} {Δ₁ Δ₂} {Γ₁ Γ₂} → Δ₁ ⊆ Δ₂ → Γ₁ ⊆ Γ₂ → Δ₁ ; Γ₁ ⊢ A → Δ₂ ; Γ₂ ⊢ A
-  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (var x) = var (wken-var Γ₁⊆Γ₂ x)
-  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (app t t₁) = app (wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t) (wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t₁)
-  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (lam t) = lam (wken Δ₁⊆Δ₂ (keep Γ₁⊆Γ₂) t)
-  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (box t) = box (wken base Δ₁⊆Δ₂ t)
+  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (var x)          = var (wken-var Γ₁⊆Γ₂ x)
+  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (app t t₁)       = app (wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t) (wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t₁)
+  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (lam t)          = lam (wken Δ₁⊆Δ₂ (keep Γ₁⊆Γ₂) t)
+  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (box t)          = box (wken [] Δ₁⊆Δ₂ t)
   wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (letbox t In t₁) = letbox (wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t) In (wken (keep Δ₁⊆Δ₂) Γ₁⊆Γ₂ t₁)
-  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (fst t) = fst (wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t)
-  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (snd t) = snd (wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t)
-  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (prd t t₁) = prd (wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t) (wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t₁)
+  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (fst t)          = fst (wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t)
+  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (snd t)          = snd (wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t)
+  wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ (prd t t₁)       = prd (wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t) (wken Δ₁⊆Δ₂ Γ₁⊆Γ₂ t₁)
 
   --8<-- (for convenience)
   mwken : ∀ {A} {Δ Δ'} {Γ} → Δ ⊆ Δ' → Δ ; Γ ⊢ A → Δ' ; Γ ⊢ A
@@ -174,7 +163,7 @@ module IK.Calculus.DC where
      wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ (up t)          = up (wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ t)
      wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ (lam t)         = lam (wkNf Δ₁⊆Δ₂ (keep Γ₁⊆Γ₂) t)
      wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ (prd t u)       = prd (wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ t) (wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ u)
-     wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ (box t)         = box (wkNf base Δ₁⊆Δ₂ t)
+     wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ (box t)         = box (wkNf [] Δ₁⊆Δ₂ t)
      wkNf Δ₁⊆Δ₂ Γ₁⊆Γ₂ (letbox t In u) = letbox wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ t In wkNf (keep Δ₁⊆Δ₂) Γ₁⊆Γ₂ u
 
   --8<-- (for convenience)
@@ -211,13 +200,16 @@ module IK.Calculus.DC where
     Nf⇒Tm (box t)         = box (Nf⇒Tm t)
     Nf⇒Tm (letbox t In u) = letbox Ne⇒Tm t In Nf⇒Tm u
 
-  data LSub (Δ : Ctx) (Γ' : Ctx) : Ctx → Set where
-    !   : LSub Δ Γ' []
-    _,_ : (σ : LSub Δ Γ' Γ) → (t : Δ ; Γ' ⊢ a) → LSub Δ Γ' (Γ `, a)
+  LSub : (Δ : Ctx) (Γ' : Ctx) (Γ : Ctx) → Set
+  LSub Δ Γ' = All (Δ ; Γ' ⊢_)
+
+  pattern _,_ σ t = t ∷ σ
+
+  lsub-refl : LSub Δ Γ Γ
+  lsub-refl = All.tabulate var
 
   wken-lsub : Δ ⊆ Δ' → Γ ⊆ Γ' → LSub Δ Γ Ε → LSub Δ' Γ' Ε
-  wken-lsub Δ⊆Δ' Γ⊆Γ' !       = !
-  wken-lsub Δ⊆Δ' Γ⊆Γ' (σ , t) = wken-lsub Δ⊆Δ' Γ⊆Γ' σ , wken Δ⊆Δ' Γ⊆Γ' t
+  wken-lsub Δ⊆Δ' Γ⊆Γ' = All.map (wken Δ⊆Δ' Γ⊆Γ')
 
   --8<-- (convenience)
   mwken-lsub : Δ ⊆ Δ' → LSub Δ Γ Ε → LSub Δ' Γ Ε
@@ -228,13 +220,7 @@ module IK.Calculus.DC where
   -->8--
 
   wken-to-lsub : Γ ⊆ Γ' → LSub Δ Γ' Γ
-  wken-to-lsub base        = !
-  wken-to-lsub (keep Γ⊆Γ') = wken-to-lsub (drop Γ⊆Γ') , v0
-  wken-to-lsub (drop Γ⊆Γ') = lwken-lsub ⊆-`, (wken-to-lsub Γ⊆Γ')
-
-  lsubst-var : LSub Δ Γ' Γ → a ∈ Γ → Δ ; Γ' ⊢ a
-  lsubst-var (σ , t) here      = t
-  lsubst-var (σ , t) (there v) = lsubst-var σ v
+  wken-to-lsub Γ⊆Γ' = lwken-lsub Γ⊆Γ' lsub-refl
 
   lsubst : LSub Δ Γ' Γ → Δ ; Γ ⊢ b → Δ ; Γ' ⊢ b
   lsubst σ (var v)         = lsubst-var σ v
@@ -247,15 +233,11 @@ module IK.Calculus.DC where
   lsubst σ (letbox t In u) = letbox (lsubst σ t) In (lsubst (mwken-lsub ⊆-`, σ) u)
 
   --8<-- (for convenience)
-  lsub-refl : LSub Δ Γ Γ
-  lsub-refl = wken-to-lsub ⊆-refl
-
   lsub-`, : LSub Δ (Γ `, a) Γ
   lsub-`, = wken-to-lsub ⊆-`,
 
   lsub-trans : LSub Δ Γ Γ' → LSub Δ Γ' Γ'' → LSub Δ Γ Γ''
-  lsub-trans σ' !       = !
-  lsub-trans σ' (σ , t) = lsub-trans σ' σ , lsubst σ' t
+  lsub-trans σ' = All.map (lsubst σ')
 
   lsub-swap : LSub Δ (Γ `, b `, a) (Γ `, a `, b)
   lsub-swap = lsub-trans lsub-`, lsub-`, , v0 , v1
@@ -264,8 +246,7 @@ module IK.Calculus.DC where
   lsub-keep σ = lsub-trans lsub-`, σ , v0
 
   lsub-keeps : LSub Δ Γ Γ' → LSub Δ (Γ `,, Ε) (Γ' `,, Ε)
-  lsub-keeps {Ε = []}     σ = σ
-  lsub-keeps {Ε = Ε `, a} σ = lsub-keep (lsub-keeps σ)
+  lsub-keeps σ = All.++⁺ (lwken-lsub (++⁺ʳ _ ⊆-refl) lsub-refl) (lwken-lsub ⊆-`,, σ)
   -->8--
 
   --8<-- (for convenience)
@@ -277,26 +258,14 @@ module IK.Calculus.DC where
            → Δ ; Γ `,, Γ' ⊢ B
   cut u t = lsubst (lsub-keeps (lsub-refl , u)) t
 
-  data MSub (Δ : Ctx) : (Δ' : Ctx) → Set where -- = Sub [] Δ Δ'
-    !   : MSub Δ []
-    _,_ : (σ : MSub Δ Δ') → (t : [] ; Δ ⊢ a) → MSub Δ (Δ' `, a)
+  MSub : (Δ : Ctx) (Δ' : Ctx) → Set -- Sub [] Δ Δ'
+  MSub Δ = All ([] ; Δ ⊢_)
 
-  msub-to-lsub : MSub Δ' Δ → LSub [] Δ' Δ
-  msub-to-lsub ! = !
-  msub-to-lsub (σ , t) = msub-to-lsub σ , t
+  msub-refl : MSub Δ Δ
+  msub-refl = All.tabulate var
 
-  lsub-to-msub : LSub [] Δ' Δ → MSub Δ' Δ
-  lsub-to-msub ! = !
-  lsub-to-msub (σ , t) = lsub-to-msub σ , t
-
-  mwken-msub : Δ ⊆ Δ' → MSub Δ Ε → MSub Δ' Ε
-  mwken-msub Δ⊆Δ' !       = !
-  mwken-msub Δ⊆Δ' (σ , t) = mwken-msub Δ⊆Δ' σ , lwken Δ⊆Δ' t
-
-  wken-to-msub : Δ ⊆ Δ' → MSub Δ' Δ
-  wken-to-msub base        = !
-  wken-to-msub (keep Δ⊆Δ') = wken-to-msub (drop Δ⊆Δ') , v0
-  wken-to-msub (drop Δ⊆Δ') = mwken-msub ⊆-`, (wken-to-msub Δ⊆Δ')
+  wken-msub : Δ ⊆ Δ' → MSub Δ Ε → MSub Δ' Ε
+  wken-msub Δ⊆Δ' = All.map (lwken Δ⊆Δ')
 
   msubst : MSub Δ' Δ → Δ ; Γ ⊢ b → Δ' ; Γ ⊢ b
   msubst σ (var v)         = var v
@@ -305,31 +274,26 @@ module IK.Calculus.DC where
   msubst σ (fst t)         = fst (msubst σ t)
   msubst σ (snd t)         = snd (msubst σ t)
   msubst σ (prd t u)       = prd (msubst σ t) (msubst σ u)
-  msubst σ (box t)         = box (lsubst (msub-to-lsub σ) t)
-  msubst σ (letbox t In u) = letbox (msubst σ t) In (msubst (mwken-msub ⊆-`, σ , v0) u)
+  msubst σ (box t)         = box (lsubst σ t)
+  msubst σ (letbox t In u) = letbox (msubst σ t) In (msubst (wken-msub ⊆-`, σ , v0) u)
 
   --8<-- (for convenience)
-  msub-refl : MSub Δ Δ
-  msub-refl = wken-to-msub ⊆-refl
-
   msub-`, : MSub (Δ `, a) Δ
-  msub-`, = wken-to-msub ⊆-`,
+  msub-`, = wken-msub ⊆-`, msub-refl
 
   msub-trans : MSub Δ Δ' → MSub Δ' Δ'' → MSub Δ Δ''
-  msub-trans σ' ! = !
-  msub-trans σ' (σ , t) = msub-trans σ' σ , lsubst (msub-to-lsub σ') t
+  msub-trans σ' = All.map (lsubst σ')
 
   msub-keep : MSub Δ Δ' → MSub (Δ `, a) (Δ' `, a)
-  msub-keep σ = mwken-msub ⊆-`, σ , v0
+  msub-keep σ = wken-msub ⊆-`, σ , v0
 
   msub-keeps : MSub Δ Δ' → MSub (Δ `,, Ε) (Δ' `,, Ε)
-  msub-keeps {Ε = []} σ = σ
-  msub-keeps {Ε = Ε `, a} σ =  msub-keep (msub-keeps σ)
+  msub-keeps σ = All.++⁺ (wken-msub (++⁺ʳ _ ⊆-refl) msub-refl) (wken-msub ⊆-`,, σ)
   -->8--
 
   --8<-- (for convenience)
-  msub-swap : MSub (Δ `, b `, a) (Δ `, a `, b)
-  msub-swap = lsub-to-msub lsub-swap
+  msub-swap : MSub (Δ `, b `, a) (Δ `, a `, b) 
+  msub-swap = msub-trans lsub-`, msub-`, , v0 , v1
 
   msubst-here : [] ; Δ ⊢ a → (Δ `, a) ; Γ ⊢ b → Δ ; Γ ⊢ b
   msubst-here u t = msubst (msub-refl , u) t

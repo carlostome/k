@@ -3,7 +3,7 @@ module IK.NbE.DC.Model where
   open import Data.Product
   open import Relation.Binary.PropositionalEquality
 
-  open import IK.Calculus.DC hiding (!; _,_)
+  open import IK.Calculus.DC hiding (_,_)
 
   ISet = Ctx → Ctx → Set
 
@@ -21,7 +21,7 @@ module IK.NbE.DC.Model where
     letbox : ∀ {a} → Δ ; Γ ⊢Ne (◻ a) → Box P (Δ `, a) Γ → Box P Δ Γ
 
   wkBox : ∀ {P : Psh} {Δ₁ Δ₂ Γ₁ Γ₂} → Δ₁ ⊆ Δ₂ → Γ₁ ⊆ Γ₂ → Box P Δ₁ Γ₁ → Box P Δ₂ Γ₂
-  wkBox {P} Δ₁⊆Δ₂ Γ₁⊆Γ₂ (box x) = box (Wken P base Δ₁⊆Δ₂ x)
+  wkBox {P} Δ₁⊆Δ₂ Γ₁⊆Γ₂ (box x) = box (Wken P [] Δ₁⊆Δ₂ x)
   wkBox {P} Δ₁⊆Δ₂ Γ₁⊆Γ₂ (letbox x t) = letbox (wkNe Δ₁⊆Δ₂ Γ₁⊆Γ₂ x) (wkBox (keep Δ₁⊆Δ₂) Γ₁⊆Γ₂ t)
 
   □_ : (P : Psh) → Psh
@@ -194,7 +194,7 @@ module IK.NbE.DC.Model where
   reify (◻ a) .iFun (letbox n k) = letbox n In reify (◻ a) .iFun k
 
   reflects : ∀ Γ → Nes Γ →̇ ⟦ Γ ⟧Ctx
-  reflects []       = !
+  reflects []       = []
   reflects (Γ `, a) = (reflects Γ) x-map (reflect a)
 
   reifys : ∀ Γ → ⟦ Γ ⟧Ctx →̇ Nfs Γ
