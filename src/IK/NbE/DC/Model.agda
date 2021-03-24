@@ -193,24 +193,24 @@ module IK.NbE.DC.Model where
   reify (◻ a) .iFun (box x) = box (reify a .iFun x)
   reify (◻ a) .iFun (letbox n k) = letbox n In reify (◻ a) .iFun k
 
-  reflects : ∀ Γ → Nes Γ →̇ ⟦ Γ ⟧Ctx
-  reflects []       = []
-  reflects (Γ `, a) = (reflects Γ) x-map (reflect a)
+  reflects : ∀ Γ → Nes Γ →̇ ⟦ Γ ⟧LCtx
+  reflects []       = !
+  reflects (Γ `, a) = reflects Γ x-map reflect a
 
-  reifys : ∀ Γ → ⟦ Γ ⟧Ctx →̇ Nfs Γ
+  reifys : ∀ Γ → ⟦ Γ ⟧LCtx →̇ Nfs Γ
   reifys []       = !
-  reifys (Γ `, a) = (reifys Γ) x-map (reify a)
+  reifys (Γ `, a) = reifys Γ x-map reify a
 
   -- identity substitution (this is special about the NbE model)
-  idN : ⟦ Γ ⟧Ctx .iSet Δ Γ
+  idN : ⟦ Γ ⟧LCtx .iSet Δ Γ
   idN {[]} {Δ} = tt
-  idN {Γ `, a} {Δ} =  ⟦ Γ ⟧Ctx .Wken ⊆-refl ⊆-`, (idN {Γ}) , (reflect a .iFun (var here))
+  idN {Γ `, a} {Δ} = ⟦ Γ ⟧LCtx .Wken ⊆-refl ⊆-`, (idN {Γ}) , reflect a .iFun (var here)
 
   idM : ⟦ Δ ⟧MCtx .iSet Δ Γ
   idM {[]} {Γ} = box tt
   idM {Δ `, a} {Γ} =  □-pr {O = ⟦ Δ ⟧MCtx x □ ⟦ a ⟧Ty} π₁ π₂ .iFun ((⟦ Δ ⟧MCtx .Wken ⊆-`, ⊆-refl idM) , box (reflect a .iFun (var here)))
 
-  idₛ' : (⟦ Δ ⟧MCtx x ⟦ Γ ⟧Ctx) .iSet Δ Γ
+  idₛ' : (⟦ Δ ⟧MCtx x ⟦ Γ ⟧LCtx) .iSet Δ Γ
   idₛ' {Δ} {Γ} = idM , (idN {Γ = Γ})
   
   -- retraction of interpretation
@@ -225,13 +225,8 @@ module IK.NbE.DC.Model where
   -- Logical Relations --
   -----------------------
 
-  wken-sem-ctx : ∀ {Γ₁ Γ₂} → Γ₁ ⊆ Γ₂ →  Hom (⟦ Γ₂ ⟧Ctx) (⟦ Γ₁ ⟧Ctx)
-  wken-sem-ctx {Γ₂ = []} base .iFun x = x
-  wken-sem-ctx {Γ₂ = Γ₂ `, a} (keep Γ₁⊆Γ₂) .iFun (γ , t) = wken-sem-ctx Γ₁⊆Γ₂ .iFun γ , t
-  wken-sem-ctx {Γ₂ = Γ₂ `, a} (drop Γ₁⊆Γ₂) .iFun (γ , t) = wken-sem-ctx Γ₁⊆Γ₂ .iFun γ
-
   wken-sem : ∀ {a} {Δ₁ Δ₂} {Γ₁ Γ₂} → Δ₁ ⊆ Δ₂ → Γ₁ ⊆ Γ₂ → ⟦ Δ₁ ; Γ₁ ⊢ a ⟧ → ⟦ Δ₂ ; Γ₂ ⊢ a ⟧
-  wken-sem {Δ₁ = Δ₁} {Γ₁ = Γ₁} Δ₁⊆Δ₂ Γ₁⊆Γ₂ t = t ∘ (□-map (wken-sem-ctx Δ₁⊆Δ₂) x-map (wken-sem-ctx Γ₁⊆Γ₂))
+  wken-sem {Δ₁ = Δ₁} {Γ₁ = Γ₁} Δ₁⊆Δ₂ Γ₁⊆Γ₂ t = t ∘ ⟦ Δ₁⊆Δ₂ ; Γ₁⊆Γ₂ ⟧Wken
 
   open import Relation.Binary.PropositionalEquality
 

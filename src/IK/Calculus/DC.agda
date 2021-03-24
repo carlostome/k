@@ -39,11 +39,9 @@ module IK.Calculus.DC where
     Ε Ε' Ε'' : Ctx
 
   --8<-- (for convenience)
-  keep : Γ ⊆ Γ' → Γ `, a ⊆ Γ' `, a
-  keep = refl ∷_
+  pattern keep Γ⊆Γ' = refl ∷ Γ⊆Γ' -- : Γ ⊆ Γ' → Γ `, a ⊆ Γ' `, a
 
-  drop : Γ ⊆ Γ' → Γ ⊆ Γ' `, a
-  drop = _ ∷ʳ_
+  pattern drop Γ⊆Γ' = _ ∷ʳ Γ⊆Γ'   -- : Γ ⊆ Γ' → Γ ⊆ Γ' `, a
 
   ⊆-! : [] ⊆ Γ
   ⊆-! = minimum _
