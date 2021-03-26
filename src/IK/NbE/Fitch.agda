@@ -6,7 +6,7 @@ open import Data.Unit using (tt)
 open import Relation.Binary hiding (_⇒_)
 open import Relation.Binary.PropositionalEquality as P using (_≡_)
 
-open import IK.Term hiding (drop🔒) -- reexports IK.Type and Context Ty
+open import IK.Term -- reexports IK.Type and Context Ty
 
 W = Ctx
 
