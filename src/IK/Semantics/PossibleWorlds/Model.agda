@@ -4,19 +4,19 @@ open import Level
 open import Relation.Binary hiding (_⇒_)
 open import Relation.Binary.PropositionalEquality as P using (_≡_)
 
-
 -- A model of Fitch-style lambda calculus, i.e. an adjunction, _in
 -- presheaves_ (after Goldblatt?)
 module IK.Semantics.PossibleWorlds.Model
   (W-Carrier : Set)
   (R         : Rel W-Carrier 0ℓ) -- accessibility relation, abstract "lock with lock-free extension"
-  (let _W-≈_ = _≡_)             -- (_W-≈_ : Rel W-Carrier 0ℓ)
-  (let W-set = P.isEquivalence) -- (W-set : IsEquivalence _W-≈_)
+  (let _W-≈_ = _≡_)              -- (_W-≈_ : Rel W-Carrier 0ℓ)
+  (let W-set = P.isEquivalence)  -- (W-set : IsEquivalence _W-≈_)
 
-  -- (T-Carrier : Set)
-  -- (_T-≈_     : Rel T-Carrier 0ℓ)
-  (_≤_        : Rel W-Carrier 0ℓ) -- Kripke or index category relation, abstract "weakening"
-  (T-preorder : IsPreorder _W-≈_ _≤_)
+  (let T-Carrier = W-Carrier)        -- (T-Carrier : Set)
+  (let _T-≈_     = _W-≈_)            -- (_T-≈_     : Rel T-Carrier 0ℓ)
+  (let T-set     = W-set)            -- (T-set     : IsEquivalence _T-≈_)
+  (_≤_           : Rel T-Carrier 0ℓ) -- Kripke or index category relation, abstract "weakening"
+  (≤-preorder    : IsPreorder _T-≈_ _≤_)
 
   -- Nachi, the following two assumptions are satisfied by your
   -- lock-free extension and weakening relations on contexts (with
@@ -30,10 +30,11 @@ module IK.Semantics.PossibleWorlds.Model
 
 private
   W = W-Carrier
-  open IsPreorder T-preorder renaming (refl to T-≤-refl; trans to T-≤-trans)
+  open IsPreorder ≤-preorder renaming (refl to ≤-refl; trans to ≤-trans)
 
--- presheaves on (W,T-≤) w/o the laws
+-- presheaves on (W,≤) w/o the laws
 record Obj : Set₁ where
+  no-eta-equality
   constructor _,_
   field
     S          : W → Set
@@ -41,13 +42,14 @@ record Obj : Set₁ where
     -- _monotone_ is what Andreas called this; makes sense given S w
     -- can be interpreted as the proof-relevant way of saying that S
     -- is true at world w
-open Obj
+open Obj public
 
 -- natural transformations w/o the law
 record Hom (P Q : Obj) : Set where
+  no-eta-equality
   field
     f : ∀ {w} → P .S w → Q .S w
-open Hom
+open Hom public
 
 private
   variable O P Q P' Q' : Obj
@@ -68,7 +70,7 @@ T .isMonotone w≤w' x = x
 
 infix 19 _x_
 _x_ : Obj → Obj → Obj
-((P , r) x (Q , s)) .S          w            = P w × Q w
+(P x Q)             .S          w            = P .S w × Q .S w
 ((P , r) x (Q , s)) .isMonotone w≤w' (p , q) = r w≤w' p , s w≤w' q
 
 π₁ : Hom (P x Q) P
@@ -97,22 +99,22 @@ x-right-unit = pr id !
 
 -- presheaf exponential
 _^_ : Obj → Obj → Obj
-((Q , s) ^ (P , r)) .S          w      = ∀ {w'} → w ≤ w' → P w' → Q w'
-((Q , s) ^ (P , r)) .isMonotone w≤w' f = λ w'≤w'' p → f (T-≤-trans w≤w' w'≤w'') p
+(Q ^ P)             .S          w      = ∀ {w'} → w ≤ w' → P .S w' → Q .S w'
+((Q , s) ^ (P , r)) .isMonotone w≤w' f = λ w'≤w'' p → f (≤-trans w≤w' w'≤w'') p
 
 abs : Hom (O x P) Q → Hom O (Q ^ P)
 abs {O} n .f o w≤w' p = n .f (O .isMonotone w≤w' o , p)
 
 ev : Hom (Q ^ P x P) Q
-ev .f (f , p) = f T-≤-refl p
+ev .f (f , p) = f ≤-refl p
 
 -- Andreas' AG ("always") and its left adjoint ("sometime in the past")
 □_ : Obj → Obj
-(□ (P , r)) .S          w      = ∀ {v} → R w v → P v
+(□ P)       .S          w      = ∀ {v} → R w v → P .S v
 (□ (P , r)) .isMonotone w≤w' p = λ w'Rv' → let (v , v'≤v , w'Rv') = cod-R-monotone w'Rv' w≤w' in r v'≤v (p w'Rv')
 
 ◆_ : Obj → Obj
-(◆ (P , r)) .S          w                  = ∃ λ v → R v w × P v
+(◆ P)       .S          w                  = ∃ λ v → R v w × P .S v
 (◆ (P , r)) .isMonotone w≤w' (v , vRw , p) = let (v' , v≤v' , v'Rw') = dom-R-monotone vRw w≤w' in v' , v'Rw' , r v≤v' p
 
 right : Hom (◆ P) Q → Hom P (□ Q)
@@ -127,10 +129,10 @@ unit = right id
 counit : Hom (◆ (□ P)) P
 counit = left id
 
-□-map :  Hom P Q → Hom (□ P) (□ Q)
+□-map : Hom P Q → Hom (□ P) (□ Q)
 □-map n .f x wRw' = n .f (x wRw')
 
-◆-map :  Hom P Q → Hom (◆ P) (◆ Q)
+◆-map : Hom P Q → Hom (◆ P) (◆ Q)
 ◆-map n = left (unit ∘ n)
 
 □-pr : Hom O (□ P) → Hom O (□ Q) → Hom O (□ (P x Q))

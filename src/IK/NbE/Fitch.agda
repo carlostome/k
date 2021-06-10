@@ -1,4 +1,4 @@
--- Formulation of the NbE model in Norm.agda in terms of Model.agda
+-- Formulation of the NbE model in Norm.agda in terms of PossibleWorlds/Model.agda
 module IK.NbE.Fitch where
 
 open import Data.Product using (_,_; proj₁; proj₂; ∃; _×_)
