@@ -184,6 +184,11 @@ data Ext (θ : Flag) : Ctx → Ctx → Ctx → Set where
 LFExt : Ctx → Ctx → Ctx → Set
 LFExt = Ext ff
 
+-- Embed a lock-free extension to context extension
+embLFExt : LFExt Δ Γ Γ' → Ext tt Δ Γ Γ'
+embLFExt nil     = nil
+embLFExt (ext x) = ext (embLFExt x)
+
 -- LFExt is indeed a lock-free extension
 LFExtIs🔒-free : LFExt Γ ΓL ΓR → 🔒-free ΓR
 LFExtIs🔒-free nil = tt
